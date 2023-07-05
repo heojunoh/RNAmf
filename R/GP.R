@@ -27,7 +27,8 @@
 #'
 #' @importFrom plgp distance covar.sep
 #' @importFrom stats optim
-#' @export
+#' @noRd
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' library(lhs)

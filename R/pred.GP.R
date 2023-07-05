@@ -12,7 +12,8 @@
 #' }
 #'
 #' @importFrom plgp covar.sep
-#' @export
+#' @noRd
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' library(lhs)

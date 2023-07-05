@@ -6,6 +6,8 @@
 #' @param r vector or matrix of input.
 #' @param nu numerical value of smoothness hyperparameter. It should be 0.5, 1.5, 2.5, 3.5, or 4.5.
 #' @param derivative logical indicating for its first derivative(derivative=1)
+#' @noRd
+#' @keywords internal
 #' @return A value from matern kernel.
 
 matern.kernel <- function(r,nu,derivative=0){

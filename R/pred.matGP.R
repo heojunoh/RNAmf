@@ -11,7 +11,8 @@
 #'   \item \code{sig2}: vector of predictive posterior variance.
 #' }
 #'
-#' @export
+#' @noRd
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' library(lhs)
