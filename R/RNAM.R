@@ -1,4 +1,4 @@
-#' closed
+#' RNAM
 #'
 #' Fitting the model with two fidelity levels
 #'
@@ -16,9 +16,40 @@
 #'   \item \code{kernel}: copy of kernel.
 #' }
 #' @export
+#' @examples
+#' library(MuFiCokriging)
+#' library(lhs)
+#'
+#' ### synthetic function ###
+#' f1 <- function(x)
+#' {
+#'   sin(8*pi*x)
+#' }
+#'
+#' f2 <- function(x)
+#' {
+#'   (x-sqrt(2))*(sin(8*pi*x))^2
+#' }
+#'
+#' ### training data ###
+#' n1 <- 15; n2 <- 10
+#'
+#' X1 <- maximinLHS(n1, 1)
+#' X2 <- maximinLHS(n2, 1)
+#'
+#' NestDesign <- NestedDesignBuild(design = list(X1,X2))
+#'
+#' X1 <- NestDesign$PX
+#' X2 <- ExtractNestDesign(NestDesign,2)
+#'
+#' y1 <- f1(X1)
+#' y2 <- f2(X2)
+#'
+#' ### fitting ###
+#' fit.RNAM <- RNAM(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
 #'
 
-closed <- function(X1, y1, X2, y2, kernel, constant=FALSE){
+RNAM <- function(X1, y1, X2, y2, kernel, constant=FALSE){
   if(kernel=="sqex"){
     if(constant){
       fit1 <- GP(X1, y1, constant=TRUE)

@@ -1,14 +1,15 @@
-Package: Multifidelity
+Package: RNAM
 Type: Package
-Title: Multi-fidelity emulation of non-additive model
+Title: Multi-fidelity emulation of recursive non-additive model
 Version: 0.1.0
 Author: Junoh Heo <heojunoh@msu.edu>
 Maintainer: Junoh Heo <heojunoh@msu.edu>
-Description: Multi-fidelity emulation by incorporating the outputs from previous layer to the input,
+Description: Multi-fidelity emulation by incorporating the outputs from previous layer to the input recursively,
     which enables a comprehensive analysis of complex computer codes, capturing functional correlations
     between different fidelity levels and enhancing the modeling and prediction capabilities.
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
 Imports: plgp, stats
+Suggests: lhs, MuFiCokriging
 RoxygenNote: 7.2.3

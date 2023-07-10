@@ -1,8 +1,8 @@
-#' predclosed
+#' predRNAM
 #'
 #' predictive posterior mean and variance of the model with fidelity level 1 and 2.
 #'
-#' @param fit an object of class closed.
+#' @param fit an object of class RNAM.
 #' @param x vector or matrix of new input locations to predict.
 #'
 #' @return A list predictive posterior mean and variance:
@@ -13,9 +13,45 @@
 #'
 #' #' @importFrom plgp distance
 #' @export
+#' @examples
+#' library(MuFiCokriging)
+#' library(lhs)
+#'
+#' ### synthetic function ###
+#' f1 <- function(x)
+#' {
+#'   sin(8*pi*x)
+#' }
+#'
+#' f2 <- function(x)
+#' {
+#'   (x-sqrt(2))*(sin(8*pi*x))^2
+#' }
+#'
+#' ### training data ###
+#' n1 <- 15; n2 <- 10
+#'
+#' X1 <- maximinLHS(n1, 1)
+#' X2 <- maximinLHS(n2, 1)
+#'
+#' NestDesign <- NestedDesignBuild(design = list(X1,X2))
+#'
+#' X1 <- NestDesign$PX
+#' X2 <- ExtractNestDesign(NestDesign,2)
+#'
+#' y1 <- f1(X1)
+#' y2 <- f2(X2)
+#'
+#' ### test data ###
+#' x <- seq(0,1,length.out=100)
+#'
+#' ### fitting ###
+#' fit.RNAM <- RNAM(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
+#' predy <- predRNAM(fit.RNAM, x)$mu
+#' predsig2 <- predRNAM(fit.RNAM, x)$sig2
 #'
 
-predclosed <- function(fit, x){
+predRNAM <- function(fit, x){
   kernel <- fit$kernel
   constant <- fit$constant
   fit1 <- fit$fit1
