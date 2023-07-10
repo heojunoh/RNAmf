@@ -74,8 +74,8 @@ p1 <- ggplot(data.frame(x, predy), aes(x=x), color=group) +
         text=element_text(size=16,  family="serif")
   )+
   labs(x="x", y = "y")+ 
-  geom_line(aes(y=f2(x)), color="red")+ 
-  geom_line(aes(y=f1(x)), color="green")+ 
+  geom_line(aes(y=f2(x)), color="green")+ 
+  geom_line(aes(y=f1(x)), color="red")+ 
   geom_line(aes(y=predy), color="blue") + 
   geom_point(data=data.frame(X1,y1),aes(x=X1, y=y1),col="red", shape=2, size=1.5) +
   geom_point(data=data.frame(X2,y2),aes(x=X2, y=y2),col="green", shape=19, size=1.5) +
@@ -84,4 +84,5 @@ p1 <- ggplot(data.frame(x, predy), aes(x=x), color=group) +
   scale_y_continuous(limits = c(-1.5,1.2))
 ```
 
-![Example plot](https://github.com/heojunoh/Multifidelity/assets/99292199/fa7b3447-98a4-4ebc-a2cd-fb9d7a3fec6b)
+!![Example plot](https://github.com/heojunoh/Multifidelity/assets/99292199/4c9858d0-28ab-417d-ba9d-05a2c87dafb4)
+
