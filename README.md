@@ -86,3 +86,7 @@ p1 <- ggplot(data.frame(x, predy), aes(x=x), color=group) +
 
 ![Example plot](https://github.com/heojunoh/Multifidelity/assets/99292199/4c9858d0-28ab-417d-ba9d-05a2c87dafb4)
 
+``` r
+print(sqrt(mean((f2(x) - predy)^2)))
+[1] 0.07253297
+```
