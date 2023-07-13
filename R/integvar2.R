@@ -3,7 +3,7 @@
 #' computing integrated one-step ahead variance with three fidelity levels
 #'
 #' @param x vector or matrix of test data.
-#' @param fit an object of class RNAM2.
+#' @param fit an object of class RNAmf2.
 #' @param mc.sample a number of mc samples generated for this approach. Default is 10.
 #' @return A list containing the integrated one-step ahead variance:
 #' \itemize{
@@ -25,8 +25,8 @@ integvar2 <- function(x, fit, mc.sample=10){
   pseudointvar2 <- c(rep(0, mc.sample))
   pseudointvar3 <- c(rep(0, mc.sample))
 
-  fit1 <- f1 <- fit$fit.RNAM1$fit1
-  fit2 <- f2 <- fit$fit.RNAM1$fit2
+  fit1 <- f1 <- fit$fit.RNAmf1$fit1
+  fit2 <- f2 <- fit$fit.RNAmf1$fit2
   fit3 <- f3 <- fit$fit3
   constant <- fit$constant
   kernel <- fit$kernel
@@ -99,9 +99,9 @@ integvar2 <- function(x, fit, mc.sample=10){
 
       fit1$tau2hat <- drop(t(fit1$y) %*% fit1$Ki %*% fit1$y / length(fit1$y))
 
-      fit$fit.RNAM1$fit1 <- fit1
+      fit$fit.RNAmf1$fit1 <- fit1
 
-      pseudointvar1[j] <- mean(predRNAM2(fit, x)$sig2)
+      pseudointvar1[j] <- mean(predRNAmf2(fit, x)$sig2)
 
 
       ### Choose level 2 ###
@@ -153,9 +153,9 @@ integvar2 <- function(x, fit, mc.sample=10){
 
       fit2$tau2hat <- drop(t(fit2$y) %*% fit2$Ki %*% fit2$y / length(fit2$y))
 
-      fit$fit.RNAM1$fit2 <- fit2
+      fit$fit.RNAmf1$fit2 <- fit2
 
-      pseudointvar2[j] <- mean(predRNAM2(fit, x)$sig2)
+      pseudointvar2[j] <- mean(predRNAmf2(fit, x)$sig2)
 
 
       ### Choose level 3 ###
@@ -209,11 +209,11 @@ integvar2 <- function(x, fit, mc.sample=10){
 
       fit$fit3 <- fit3
 
-      pseudointvar3[j] <- mean(predRNAM2(fit, x)$sig2)
+      pseudointvar3[j] <- mean(predRNAmf2(fit, x)$sig2)
 
 
-      fit$fit.RNAM1$fit1 <- fit1 <- f1
-      fit$fit.RNAM1$fit2 <- fit2 <- f2
+      fit$fit.RNAmf1$fit1 <- fit1 <- f1
+      fit$fit.RNAmf1$fit2 <- fit2 <- f2
       fit$fit3 <- fit3 <- f3
     }
 

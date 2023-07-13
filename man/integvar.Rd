@@ -9,7 +9,7 @@ integvar(x, fit, mc.sample = 10)
 \arguments{
 \item{x}{vector or matrix of test data.}
 
-\item{fit}{an object of class RNAM.}
+\item{fit}{an object of class RNAmf.}
 
 \item{mc.sample}{a number of mc samples generated for this approach. Default is 10.}
 }

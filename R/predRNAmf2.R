@@ -1,8 +1,8 @@
-#' predRNAM2
+#' predRNAmf2
 #'
 #' predictive posterior mean and variance of the model with fidelity level 1, 2 and 3.
 #'
-#' @param fit an object of class RNAM2.
+#' @param fit an object of class RNAmf2.
 #' @param x vector or matrix of new input locations to predict.
 #'
 #' @return A list predictive posterior mean and variance:
@@ -15,19 +15,19 @@
 #' @export
 #'
 
-predRNAM2 <- function(fit, x){
+predRNAmf2 <- function(fit, x){
   kernel <- fit$kernel
   constant <- fit$constant
-  fit.RNAM1 <- fit$fit.RNAM1
-  fit1 <- fit.RNAM1$fit1
-  fit2 <- fit.RNAM1$fit2
+  fit.RNAmf1 <- fit$fit.RNAmf1
+  fit1 <- fit.RNAmf1$fit1
+  fit2 <- fit.RNAmf1$fit2
   fit3 <- fit$fit3
 
   if(kernel=="sqex"){
     if(constant){
-      fit.RNAM1 <- predRNAM(fit.RNAM1, x)
-      x.mu <- fit.RNAM1$mu
-      sig2 <- fit.RNAM1$sig2
+      fit.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
+      x.mu <- fit.RNAmf1$mu
+      sig2 <- fit.RNAmf1$sig2
 
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
@@ -83,9 +83,9 @@ predRNAM2 <- function(fit, x){
         predsig2[i] <- pmax(0, tau2hat - (predy[i]-mu3)^2 + sum(mat))
       }
     }else{
-      fit.RNAM1 <- predRNAM(fit.RNAM1, x)
-      x.mu <- fit.RNAM1$mu
-      sig2 <- fit.RNAM1$sig2
+      fit.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
+      x.mu <- fit.RNAmf1$mu
+      sig2 <- fit.RNAmf1$sig2
 
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
@@ -144,9 +144,9 @@ predRNAM2 <- function(fit, x){
     if(constant){
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      fit.RNAM1 <- predRNAM(fit.RNAM1, x)
-      x.mu <- fit.RNAM1$mu
-      sig2 <- fit.RNAM1$sig2
+      fit.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
+      x.mu <- fit.RNAmf1$mu
+      sig2 <- fit.RNAmf1$sig2
 
       ### calculate the closed form ###
       X3 <- matrix(fit3$X[,-(d+1)], ncol=d)
@@ -214,9 +214,9 @@ predRNAM2 <- function(fit, x){
     }else{
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      fit.RNAM1 <- predRNAM(fit.RNAM1, x)
-      x.mu <- fit.RNAM1$mu
-      sig2 <- fit.RNAM1$sig2
+      fit.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
+      x.mu <- fit.RNAmf1$mu
+      sig2 <- fit.RNAmf1$sig2
 
       ### calculate the closed form ###
       X3 <- matrix(fit3$X[,-(d+1)], ncol=d)
@@ -285,9 +285,9 @@ predRNAM2 <- function(fit, x){
     if(constant){
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      fit.RNAM1 <- predRNAM(fit.RNAM1, x)
-      x.mu <- fit.RNAM1$mu
-      sig2 <- fit.RNAM1$sig2
+      fit.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
+      x.mu <- fit.RNAmf1$mu
+      sig2 <- fit.RNAmf1$sig2
 
       ### calculate the closed form ###
       X3 <- matrix(fit3$X[,-(d+1)], ncol=d)
@@ -360,9 +360,9 @@ predRNAM2 <- function(fit, x){
     }else{
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      fit.RNAM1 <- predRNAM(fit.RNAM1, x)
-      x.mu <- fit.RNAM1$mu
-      sig2 <- fit.RNAM1$sig2
+      fit.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
+      x.mu <- fit.RNAmf1$mu
+      sig2 <- fit.RNAmf1$sig2
 
       ### calculate the closed form ###
       X3 <- matrix(fit3$X[,-(d+1)], ncol=d)

@@ -1,8 +1,8 @@
-#' predRNAM
+#' predRNAmf
 #'
 #' predictive posterior mean and variance of the model with fidelity level 1 and 2.
 #'
-#' @param fit an object of class RNAM.
+#' @param fit an object of class RNAmf.
 #' @param x vector or matrix of new input locations to predict.
 #'
 #' @return A list predictive posterior mean and variance:
@@ -46,12 +46,12 @@
 #' x <- seq(0,1,length.out=100)
 #'
 #' ### fitting ###
-#' fit.RNAM <- RNAM(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
-#' predy <- predRNAM(fit.RNAM, x)$mu
-#' predsig2 <- predRNAM(fit.RNAM, x)$sig2
+#' fit.RNAmf <- RNAmf(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
+#' predy <- predRNAmf(fit.RNAmf, x)$mu
+#' predsig2 <- predRNAmf(fit.RNAmf, x)$sig2
 #'
 
-predRNAM <- function(fit, x){
+predRNAmf <- function(fit, x){
   kernel <- fit$kernel
   constant <- fit$constant
   fit1 <- fit$fit1

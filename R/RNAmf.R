@@ -1,4 +1,4 @@
-#' RNAM
+#' RNAmf
 #'
 #' Fitting the model with two fidelity levels
 #'
@@ -46,10 +46,10 @@
 #' y2 <- f2(X2)
 #'
 #' ### fitting ###
-#' fit.RNAM <- RNAM(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
+#' fit.RNAmf <- RNAmf(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
 #'
 
-RNAM <- function(X1, y1, X2, y2, kernel, constant=FALSE){
+RNAmf <- function(X1, y1, X2, y2, kernel, constant=FALSE){
   if(all(X2 %in% X1) == FALSE){
     stop("X2 is not nested by X1")
   }

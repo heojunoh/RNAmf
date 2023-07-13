@@ -1,4 +1,4 @@
-#' RNAM2
+#' RNAmf2
 #'
 #' Fitting the model with three fidelity levels
 #'
@@ -12,7 +12,7 @@
 #' @param constant logical indicating for constant mean (constant=TRUE) or zero mean (constant=FALSE). Default is FALSE.
 #' @return A list containing fitted models f1, f2 and f3, constant, and kernel structure:
 #' \itemize{
-#'   \item \code{fit.RNAM1}: list of fitted model for low fidelity level (X1, y1) and medium fidelity level ((X2, f1(X2)), y2).
+#'   \item \code{fit.RNAmf1}: list of fitted model for low fidelity level (X1, y1) and medium fidelity level ((X2, f1(X2)), y2).
 #'   \item \code{fit3}: list of fitted model for ((X2, f2(X3, f1(X3))), y3).
 #'   \item \code{constant}: copy of constant.
 #'   \item \code{kernel}: copy of kernel.
@@ -20,7 +20,7 @@
 #' @export
 #'
 
-RNAM2 <- function(X1, y1, X2, y2, X3, y3, kernel, constant=FALSE){
+RNAmf2 <- function(X1, y1, X2, y2, X3, y3, kernel, constant=FALSE){
   if(all(X2 %in% X1) == FALSE){
     stop("X2 is not nested by X1")
   }
@@ -31,47 +31,47 @@ RNAM2 <- function(X1, y1, X2, y2, X3, y3, kernel, constant=FALSE){
 
   if(kernel=="sqex"){
     if(constant){
-      fit.RNAM1 <- RNAM(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
+      fit.RNAmf1 <- RNAmf(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
 
-      fit1 <- fit.RNAM1$fit1
-      fit2 <- fit.RNAM1$fit2
+      fit1 <- fit.RNAmf1$fit1
+      fit2 <- fit.RNAmf1$fit2
       fit3 <- GP(cbind(X3, pred.GP(fit2, cbind(X3, pred.GP(fit1, X3)$mu))$mu), y3, constant=TRUE)
     }else{
-      fit.RNAM1 <- RNAM(X1, y1, X2, y2, kernel="sqex")
+      fit.RNAmf1 <- RNAmf(X1, y1, X2, y2, kernel="sqex")
 
-      fit1 <- fit.RNAM1$fit1
-      fit2 <- fit.RNAM1$fit2
+      fit1 <- fit.RNAmf1$fit1
+      fit2 <- fit.RNAmf1$fit2
       fit3 <- GP(cbind(X3, pred.GP(fit2, cbind(X3, pred.GP(fit1, X3)$mu))$mu), y3)
     }
   }else if(kernel=="matern1.5"){
     if(constant){
-      fit.RNAM1 <- RNAM(X1, y1, X2, y2, kernel="matern1.5", constant=TRUE)
+      fit.RNAmf1 <- RNAmf(X1, y1, X2, y2, kernel="matern1.5", constant=TRUE)
 
-      fit1 <- fit.RNAM1$fit1
-      fit2 <- fit.RNAM1$fit2
+      fit1 <- fit.RNAmf1$fit1
+      fit2 <- fit.RNAmf1$fit2
       fit3 <- matGP(cbind(X3, pred.matGP(fit2, cbind(X3, pred.matGP(fit1, X3)$mu))$mu), y3, nu=1.5, constant=TRUE)
     }else{
-      fit.RNAM1 <- RNAM(X1, y1, X2, y2, kernel="matern1.5")
+      fit.RNAmf1 <- RNAmf(X1, y1, X2, y2, kernel="matern1.5")
 
-      fit1 <- fit.RNAM1$fit1
-      fit2 <- fit.RNAM1$fit2
+      fit1 <- fit.RNAmf1$fit1
+      fit2 <- fit.RNAmf1$fit2
       fit3 <- matGP(cbind(X3, pred.matGP(fit2, cbind(X3, pred.matGP(fit1, X3)$mu))$mu), y3, nu=1.5)
     }
   }else if(kernel=="matern2.5"){
     if(constant){
-      fit.RNAM1 <- RNAM(X1, y1, X2, y2, kernel="matern2.5", constant=TRUE)
+      fit.RNAmf1 <- RNAmf(X1, y1, X2, y2, kernel="matern2.5", constant=TRUE)
 
-      fit1 <- fit.RNAM1$fit1
-      fit2 <- fit.RNAM1$fit2
+      fit1 <- fit.RNAmf1$fit1
+      fit2 <- fit.RNAmf1$fit2
       fit3 <- matGP(cbind(X3, pred.matGP(fit2, cbind(X3, pred.matGP(fit1, X3)$mu))$mu), y3, nu=2.5)
     }else{
-      fit.RNAM1 <- RNAM(X1, y1, X2, y2, kernel="matern2.5")
+      fit.RNAmf1 <- RNAmf(X1, y1, X2, y2, kernel="matern2.5")
 
-      fit1 <- fit.RNAM1$fit1
-      fit2 <- fit.RNAM1$fit2
+      fit1 <- fit.RNAmf1$fit1
+      fit2 <- fit.RNAmf1$fit2
       fit3 <- matGP(cbind(X3, pred.matGP(fit2, cbind(X3, pred.matGP(fit1, X3)$mu))$mu), y3, nu=2.5, constant=TRUE)
     }
   }
 
-  return(list(fit.RNAM1=fit.RNAM1, fit3=fit3, constant=constant, kernel=kernel))
+  return(list(fit.RNAmf1=fit.RNAmf1, fit3=fit3, constant=constant, kernel=kernel))
 }
