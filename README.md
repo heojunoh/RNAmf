@@ -1,6 +1,7 @@
-# Multifidelity
+# RNAmf
 
-This is the R package `Multifidelity` implementing the multi-fidelity emulation by incorporating the outputs from previous layer to the input,
+This is the R package `RNAmf` implementing the recursive non=additive emulation for multi-fidelity data 
+by incorporating the outputs from previous layer to the input,
 which enables a comprehensive analysis of complex computer codes, 
 capturing functional correlations between different fidelity levels and enhancing the modeling and prediction capabilities. 
 It includes computing integration of one step ahead variance for proposed active learning.
@@ -17,7 +18,7 @@ Maintainer: Junoh Heo <heojunoh@msu.edu>
 ``` r
 install.packages("devtools")
 library(devtools)
-devtools::install_github("heojunoh/Multifidelity")
+devtools::install_github("heojunoh/RNAmf")
 ```
 
 ## Example
@@ -62,9 +63,9 @@ y2 <- f2(X2)
 x <- seq(0,1,length.out=100)
 
 ### fitting and prediction ###
-fit.closed <- closed(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
-predy <- predclosed(fit.closed, x)$mu
-predsig2 <- predclosed(fit.closed, x)$sig2
+fit.RNAmf <- RNAmf(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
+predy <- predRNAmf(fit.RNAmf, x)$mu
+predsig2 <- predRNAmf(fit.RNAmf, x)$sig2
 
 ### plotting ###
 p1 <- ggplot(data.frame(x, predy), aes(x=x), color=group) +
