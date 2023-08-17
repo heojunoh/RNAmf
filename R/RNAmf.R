@@ -50,9 +50,9 @@
 #'
 
 RNAmf <- function(X1, y1, X2, y2, kernel, constant=FALSE){
-  if(all(X2 %in% X1) == FALSE){
-    stop("X2 is not nested by X1")
-  }
+  # if(all(X2 %in% X1) == FALSE){
+  #   stop("X2 is not nested by X1")
+  # }
 
   if(kernel=="sqex"){
     if(constant){

@@ -21,13 +21,13 @@
 #'
 
 RNAmf2 <- function(X1, y1, X2, y2, X3, y3, kernel, constant=FALSE){
-  if(all(X2 %in% X1) == FALSE){
-    stop("X2 is not nested by X1")
-  }
-
-  if(all(X3 %in% X2) == FALSE){
-    stop("X2 is not nested by X1")
-  }
+  # if(all(X2 %in% X1) == FALSE){
+  #   stop("X2 is not nested by X1")
+  # }
+  #
+  # if(all(X3 %in% X2) == FALSE){
+  #   stop("X2 is not nested by X1")
+  # }
 
   if(kernel=="sqex"){
     if(constant){
@@ -75,3 +75,4 @@ RNAmf2 <- function(X1, y1, X2, y2, X3, y3, kernel, constant=FALSE){
 
   return(list(fit.RNAmf1=fit.RNAmf1, fit3=fit3, constant=constant, kernel=kernel))
 }
+

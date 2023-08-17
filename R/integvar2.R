@@ -199,9 +199,9 @@ integvar2 <- function(x, fit, mc.sample=10){
       attr(fit3$X, "scaled:scale") <- x.scale3
 
       if(constant){
-        fit3$y <- rbind(f3$y, x3.sample)
+        fit3$y <- c(f3$y, x3.sample)
       }else{
-        fit3$y <- rbind(f3$y, x3.sample-y.center3)
+        fit3$y <- c(f3$y, x3.sample-y.center3)
         attr(fit3$y, "scaled:center") <- y.center3
       }
 
@@ -210,7 +210,6 @@ integvar2 <- function(x, fit, mc.sample=10){
       fit$fit3 <- fit3
 
       pseudointvar3[j] <- mean(predRNAmf2(fit, x)$sig2)
-
 
       fit$fit.RNAmf1$fit1 <- fit1 <- f1
       fit$fit.RNAmf1$fit2 <- fit2 <- f2
