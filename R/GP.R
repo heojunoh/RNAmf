@@ -63,6 +63,8 @@ GP <- function(X, y, g=sqrt(.Machine$double.eps),
 
     # darg way
     init <- rep(sort(distance(X))[sort(distance(X))!=0][0.1*length(sort(distance(X))[sort(distance(X))!=0])], ncol(X))
+    lower <- min(sort(distance(X))[sort(distance(X))!=0])
+    upper <- max(sort(distance(X))[sort(distance(X))!=0])
 
     n <- length(y)
 
