@@ -62,7 +62,17 @@ matGP <- function(X, y, nu=2.5, g=sqrt(.Machine$double.eps),
       attr(X,"scaled:scale") <- rep(1, ncol(X))
     }
 
-    init <- rep(1*sqrt(ncol(X)), ncol(X))
+    # # darg way
+    # init <- rep(sort(distance(X))[sort(distance(X))!=0][0.1*length(sort(distance(X))[sort(distance(X))!=0])], ncol(X))
+    # lower <- min(sort(distance(X))[sort(distance(X))!=0])
+    # upper <- max(sort(distance(X))[sort(distance(X))!=0])
+
+    # hetGP way
+    lower <- - quantile(distance(X)[lower.tri(distance(X))], 0.05)/log(0.01) * (apply(X, 2, range)[2,] - apply(X, 2, range)[1,])^2
+    upper <- - quantile(distance(X)[lower.tri(distance(X))], 0.95)/log(0.5) * (apply(X, 2, range)[2,] - apply(X, 2, range)[1,])^2
+    init <- sqrt(lower*upper)
+
+
     n <- length(y)
 
     nlsep <- function(par, X, Y)
