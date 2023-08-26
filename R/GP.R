@@ -67,10 +67,9 @@ GP <- function(X, y, g=sqrt(.Machine$double.eps),
     # upper <- max(sort(distance(X))[sort(distance(X))!=0])
 
     # hetGP way
-    init <- sqrt(- quantile(distance(X)[lower.tri(distance(X))], 0.05)/log(0.01) * (apply(X, 2, range)[2,] - apply(X, 2, range)[1,])^2 *
-           - quantile(distance(X)[lower.tri(distance(X))], 0.95)/log(0.5) * (apply(X, 2, range)[2,] - apply(X, 2, range)[1,])^2)
     lower <- - quantile(distance(X)[lower.tri(distance(X))], 0.05)/log(0.01) * (apply(X, 2, range)[2,] - apply(X, 2, range)[1,])^2
     upper <- - quantile(distance(X)[lower.tri(distance(X))], 0.95)/log(0.5) * (apply(X, 2, range)[2,] - apply(X, 2, range)[1,])^2
+    init <- sqrt(lower*upper)
 
 
     n <- length(y)
