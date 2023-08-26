@@ -30,6 +30,7 @@ integvar2 <- function(x, fit, mc.sample=10){
   fit3 <- f3 <- fit$fit3
   constant <- fit$constant
   kernel <- fit$kernel
+  g <- fit1$g
   x <- matrix(x, nrow=dim(t(x))[2])
 
   x.center1 <- attr(fit1$X, "scaled:center")
@@ -64,7 +65,7 @@ integvar2 <- function(x, fit, mc.sample=10){
       ### Choose level 1 ###
       ### update Ki1
       if(kernel=="sqex"){
-        v.next1 <- drop(covar.sep(X1=newx1, d=f1$theta, g=0) -
+        v.next1 <- drop(covar.sep(X1=newx1, d=f1$theta, g=g) -
                           t(covar.sep(X1=f1$X, X2=newx1, d=f1$theta, g=0)) %*%
                           f1$Ki %*%
                           covar.sep(X1=f1$X, X2=newx1, d=f1$theta, g=0))
@@ -97,7 +98,7 @@ integvar2 <- function(x, fit, mc.sample=10){
         attr(fit1$y, "scaled:center") <- y.center1
       }
 
-      fit1$tau2hat <- drop(t(fit1$y) %*% fit1$Ki %*% fit1$y / length(fit1$y))
+      fit1$tau2hat <- drop(t(fit1$y - fit1$mu.hat) %*% fit1$Ki %*% (fit1$y - fit1$mu.hat) / length(fit1$y))
 
       fit$fit.RNAmf1$fit1 <- fit1
 
@@ -118,7 +119,7 @@ integvar2 <- function(x, fit, mc.sample=10){
       newx2 <- t((t(cbind(newx, x1.sample[j]))-x.center2)/x.scale2)
 
       if(kernel=="sqex"){
-        v.next2 <- drop(covar.sep(X1=newx2, d=f2$theta, g=0) -
+        v.next2 <- drop(covar.sep(X1=newx2, d=f2$theta, g=g) -
                           t(covar.sep(X1=f2$X, X2=newx2, d=f2$theta, g=0)) %*%
                           f2$Ki %*%
                           covar.sep(X1=f2$X, X2=newx2, d=f2$theta, g=0))
@@ -151,7 +152,7 @@ integvar2 <- function(x, fit, mc.sample=10){
         attr(fit2$y, "scaled:center") <- y.center2
       }
 
-      fit2$tau2hat <- drop(t(fit2$y) %*% fit2$Ki %*% fit2$y / length(fit2$y))
+      fit2$tau2hat <- drop(t(fit2$y - fit2$mu.hat) %*% fit2$Ki %*% (fit2$y - fit2$mu.hat) / length(fit2$y))
 
       fit$fit.RNAmf1$fit2 <- fit2
 
@@ -172,7 +173,7 @@ integvar2 <- function(x, fit, mc.sample=10){
       newx3 <- t((t(cbind(newx, x2.sample))-x.center3)/x.scale3)
 
       if(kernel=="sqex"){
-        v.next3 <- drop(covar.sep(X1=newx3, d=f3$theta, g=0) -
+        v.next3 <- drop(covar.sep(X1=newx3, d=f3$theta, g=g) -
                           t(covar.sep(X1=f3$X, X2=newx3, d=f3$theta, g=0)) %*%
                           f3$Ki %*%
                           covar.sep(X1=f3$X, X2=newx3, d=f3$theta, g=0))
@@ -205,7 +206,7 @@ integvar2 <- function(x, fit, mc.sample=10){
         attr(fit3$y, "scaled:center") <- y.center3
       }
 
-      fit3$tau2hat <- drop(t(fit3$y) %*% fit3$Ki %*% fit3$y / length(fit3$y))
+      fit3$tau2hat <- drop(t(fit3$y - fit3$mu.hat) %*% fit3$Ki %*% (fit3$y - fit3$mu.hat) / length(fit3$y))
 
       fit$fit3 <- fit3
 
