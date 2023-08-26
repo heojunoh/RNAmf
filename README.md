@@ -1,6 +1,6 @@
 # RNAmf
 
-This is the R package `RNAmf` implementing the recursive non=additive emulation for multi-fidelity data 
+This is the R package `RNAmf` implementing the recursive non-additive emulation for multi-fidelity data 
 by incorporating the outputs from previous layer to the input,
 which enables a comprehensive analysis of complex computer codes, 
 capturing functional correlations between different fidelity levels and enhancing the modeling and prediction capabilities. 
