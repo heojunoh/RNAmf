@@ -61,8 +61,9 @@ predRNAmf <- function(fit, x){
     if(constant){
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      x.mu <- pred.GP(fit1, x)$mu # mean of f1(u)
-      sig2 <- pred.GP(fit1, x)$sig2 #*0
+      pred.fit <- pred.GP(fit1, x)
+      x.mu <- pred.fit$mu # mean of f1(u)
+      sig2 <- pred.fit$sig2 #*0
 
       ### calculate the closed form ###
       X2 <- matrix(fit2$X[,-(d+1)], ncol=d)
@@ -117,8 +118,9 @@ predRNAmf <- function(fit, x){
     }else{
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      x.mu <- pred.GP(fit1, x)$mu # mean of f1(u)
-      sig2 <- pred.GP(fit1, x)$sig2
+      pred.fit <- pred.GP(fit1, x)
+      x.mu <- pred.fit$mu # mean of f1(u)
+      sig2 <- pred.fit$sig2
 
       ### calculate the closed form ###
       X2 <- matrix(fit2$X[,-(d+1)], ncol=d)
@@ -174,8 +176,9 @@ predRNAmf <- function(fit, x){
     if(constant){
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      x.mu <- pred.matGP(fit1, x)$mu # mean of f1(u)
-      sig2 <- pred.matGP(fit1, x)$sig2 #*0
+      pred.fit <- pred.matGP(fit1, x)
+      x.mu <- pred.fit$mu # mean of f1(u)
+      sig2 <- pred.fit$sig2 #*0
 
       ### calculate the closed form ###
       X2 <- matrix(fit2$X[,-(d+1)], ncol=d)
@@ -244,8 +247,9 @@ predRNAmf <- function(fit, x){
     }else{
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      x.mu <- pred.matGP(fit1, x)$mu # mean of f1(u)
-      sig2 <- pred.matGP(fit1, x)$sig2
+      pred.fit <- pred.matGP(fit1, x)
+      x.mu <- pred.fit$mu # mean of f1(u)
+      sig2 <- pred.fit$sig2
 
       ### calculate the closed form ###
       X2 <- matrix(fit2$X[,-(d+1)], ncol=d)
@@ -314,8 +318,9 @@ predRNAmf <- function(fit, x){
     if(constant){
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      x.mu <- pred.matGP(fit1, x)$mu # mean of f1(u)
-      sig2 <- pred.matGP(fit1, x)$sig2 #*0
+      pred.fit <- pred.matGP(fit1, x)
+      x.mu <- pred.fit$mu # mean of f1(u)
+      sig2 <- pred.fit$sig2 #*0
 
       ### calculate the closed form ###
       X2 <- matrix(fit2$X[,-(d+1)], ncol=d)
@@ -388,8 +393,9 @@ predRNAmf <- function(fit, x){
     }else{
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      x.mu <- pred.matGP(fit1, x)$mu # mean of f1(u)
-      sig2 <- pred.matGP(fit1, x)$sig2
+      pred.fit <- pred.matGP(fit1, x)
+      x.mu <- pred.fit$mu # mean of f1(u)
+      sig2 <- pred.fit$sig2
 
       ### calculate the closed form ###
       X2 <- matrix(fit2$X[,-(d+1)], ncol=d)

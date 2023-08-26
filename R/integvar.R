@@ -15,7 +15,7 @@
 #' @export
 #'
 
-integvar <- function(x, fit, mc.sample=10){
+integvar <- function(x, fit, mc.sample=100){
 
   intvar1 <- c(rep(0, dim(t(x))[2])) # IMSPE candidates
   intvar2 <- c(rep(0, dim(t(x))[2])) # IMSPE candidates
