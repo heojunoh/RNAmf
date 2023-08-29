@@ -25,9 +25,9 @@ predRNAmf2 <- function(fit, x){
 
   if(kernel=="sqex"){
     if(constant){
-      fit.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
-      x.mu <- fit.RNAmf1$mu
-      sig2 <- fit.RNAmf1$sig2
+      pred.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
+      x.mu <- pred.RNAmf1$mu
+      sig2 <- pred.RNAmf1$sig2
 
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
@@ -50,42 +50,25 @@ predRNAmf2 <- function(fit, x){
       sig2 <- sig2/attr(fit3$X,"scaled:scale")[d+1]^2
 
       # mean
-      predy <- c(rep(0, nrow(x)))
-
-      for(j in 1: nrow(x)){
-        predv <- c(rep(1,n))
-        for(i in 1:n){
-          for(m in 1:d){
-            predv[i] <- predv[i] * exp(-(x[j,m]-X3[i,m])^2/theta[m])
-          }
-          predv[i] <- predv[i] * 1/sqrt(1+2*sig2[j]/theta[d+1]) *
-            exp(-(w2.x3[i]-x.mu[j])^2/(theta[d+1]+2*sig2[j]))
-        }
-        predy[j] <- mu3 + drop(predv%*%a)
-      }
+      predy <- mu3 + (exp(-distance(t(t(x)/sqrt(theta[-(d+1)])), t(t(X3)/sqrt(theta[-(d+1)])))) *
+                        1/sqrt(1+2*sig2/theta[d+1]) *
+                        exp(-(drop(outer(x.mu, w2.x3, FUN="-")))^2/(theta[d+1]+2*sig2))) %*% a
 
       # var
       predsig2 <- c(rep(0, nrow(x)))
+      for(i in 1: nrow(x)){ # each test point
+        mat <- drop(exp(-distance(t(x[i,])/sqrt(theta[-(d+1)]), t(t(X3)/sqrt(theta[-(d+1)])))) %o%
+                      exp(-distance(t(x[i,])/sqrt(theta[-(d+1)]), t(t(X3)/sqrt(theta[-(d+1)]))))) * # common components
+          1/sqrt(1+4*sig2[i]/theta[d+1]) *
+          exp(-(outer(w2.x3, w2.x3, FUN="+")/2 - x.mu[i])^2/(theta[d+1]/2+2*sig2[i])) *
+          exp(-(outer(w2.x3, w2.x3, FUN="-"))^2/(2*theta[d+1]))
 
-      for(i in 1: nrow(x)){
-        mat <- matrix(1, n, n)
-        for(k in 1:n){
-          for(l in 1:n){
-            for(m in 1:d){
-              mat[k,l] <- mat[k,l] * exp(-((x[i,m]-X3[k,m])^2+(x[i,m]-X3[l,m])^2)/theta[m])
-            }
-            mat[k,l] <- mat[k,l] * (a[k]*a[l] - tau2hat*Ci[k,l]) *
-              1/sqrt(1+4*sig2[i]/theta[d+1]) *
-              exp(-((w2.x3[k]+w2.x3[l])/2-x.mu[i])^2/(theta[d+1]/2+2*sig2[i])) *
-              exp(-(w2.x3[k]-w2.x3[l])^2/(2*theta[d+1]))
-          }}
-
-        predsig2[i] <- pmax(0, tau2hat - (predy[i]-mu3)^2 + sum(mat))
+        predsig2[i] <- pmax(0, tau2hat - (predy[i]-mu3)^2 + drop(t(a)%*%mat%*%a) - tau2hat*sum(diag(Ci%*%mat)))
       }
     }else{
-      fit.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
-      x.mu <- fit.RNAmf1$mu
-      sig2 <- fit.RNAmf1$sig2
+      pred.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
+      x.mu <- pred.RNAmf1$mu
+      sig2 <- pred.RNAmf1$sig2
 
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
@@ -107,46 +90,29 @@ predRNAmf2 <- function(fit, x){
       sig2 <- sig2/attr(fit3$X,"scaled:scale")[d+1]^2
 
       # mean
-      predy <- c(rep(0, nrow(x)))
-
-      for(j in 1: nrow(x)){
-        predv <- c(rep(1,n))
-        for(i in 1:n){
-          for(m in 1:d){
-            predv[i] <- predv[i] * exp(-(x[j,m]-X3[i,m])^2/theta[m])
-          }
-          predv[i] <- predv[i] * 1/sqrt(1+2*sig2[j]/theta[d+1]) *
-            exp(-(w2.x3[i]-x.mu[j])^2/(theta[d+1]+2*sig2[j]))
-        }
-        predy[j] <- drop(predv%*%a)
-      }
+      predy <- (exp(-distance(t(t(x)/sqrt(theta[-(d+1)])), t(t(X3)/sqrt(theta[-(d+1)])))) *
+                        1/sqrt(1+2*sig2/theta[d+1]) *
+                        exp(-(drop(outer(x.mu, w2.x3, FUN="-")))^2/(theta[d+1]+2*sig2))) %*% a
 
       # var
       predsig2 <- c(rep(0, nrow(x)))
+      for(i in 1: nrow(x)){ # each test point
+        mat <- drop(exp(-distance(t(x[i,])/sqrt(theta[-(d+1)]), t(t(X3)/sqrt(theta[-(d+1)])))) %o%
+                      exp(-distance(t(x[i,])/sqrt(theta[-(d+1)]), t(t(X3)/sqrt(theta[-(d+1)]))))) * # common components
+          1/sqrt(1+4*sig2[i]/theta[d+1]) *
+          exp(-(outer(w2.x3, w2.x3, FUN="+")/2 - x.mu[i])^2/(theta[d+1]/2+2*sig2[i])) *
+          exp(-(outer(w2.x3, w2.x3, FUN="-"))^2/(2*theta[d+1]))
 
-      for(i in 1: nrow(x)){
-        mat <- matrix(1, n, n)
-        for(k in 1:n){
-          for(l in 1:n){
-            for(m in 1:d){
-              mat[k,l] <- mat[k,l] * exp(-((x[i,m]-X3[k,m])^2+(x[i,m]-X3[l,m])^2)/theta[m])
-            }
-            mat[k,l] <- mat[k,l] * (a[k]*a[l] - tau2hat*Ci[k,l]) *
-              1/sqrt(1+4*sig2[i]/theta[d+1]) *
-              exp(-((w2.x3[k]+w2.x3[l])/2-x.mu[i])^2/(theta[d+1]/2+2*sig2[i])) *
-              exp(-(w2.x3[k]-w2.x3[l])^2/(2*theta[d+1]))
-          }}
-
-        predsig2[i] <- pmax(0, tau2hat - predy[i]^2 + sum(mat))
+        predsig2[i] <- pmax(0, tau2hat - predy[i]^2 + drop(t(a)%*%mat%*%a) - tau2hat*sum(diag(Ci%*%mat)))
       }
     }
   }else if(kernel=="matern1.5"){
     if(constant){
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      fit.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
-      x.mu <- fit.RNAmf1$mu
-      sig2 <- fit.RNAmf1$sig2
+      pred.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
+      x.mu <- pred.RNAmf1$mu
+      sig2 <- pred.RNAmf1$sig2
 
       ### calculate the closed form ###
       X3 <- matrix(fit3$X[,-(d+1)], ncol=d)
@@ -167,56 +133,44 @@ predRNAmf2 <- function(fit, x){
 
       # mean
       predy <- c(rep(0, nrow(x)))
-
       for(j in 1: nrow(x)){ # each test point
-        predv <- c(rep(1,n))
-        for(i in 1:n){ # each row of train set
-          for(m in 1:d){ # dim of train set
-            predv[i] <- predv[i] * matern.kernel(sqrt(distance(t(t(x[j,m])/theta[m]), t(t(X3[i,m])/theta[m]))), nu=1.5) # common but depends on kernel
-          } # depends on kernel structure
+        mua <- x.mu[j] - sqrt(3)*sig2[j]/theta[d+1]
+        mub <- x.mu[j] + sqrt(3)*sig2[j]/theta[d+1]
 
-          mua <- x.mu[j] - sqrt(3)*sig2[j]/theta[d+1]
-          mub <- x.mu[j] + sqrt(3)*sig2[j]/theta[d+1]
+        lambda11 <- c(1, mua)
+        lambda12 <- c(0, 1)
+        lambda21 <- c(1, -mub)
 
-          lambda11 <- c(1, mua)
-          lambda12 <- c(0, 1)
-          lambda21 <- c(1, -mub)
+        e1 <- cbind(matrix(1-sqrt(3)*w2.x3/theta[d+1]), sqrt(3)/theta[d+1])
+        e2 <- cbind(matrix(1+sqrt(3)*w2.x3/theta[d+1]), sqrt(3)/theta[d+1])
 
-          e1 <- c(1-sqrt(3)*w2.x3[i]/theta[d+1], sqrt(3)/theta[d+1])
-          e2 <- c(1+sqrt(3)*w2.x3[i]/theta[d+1], sqrt(3)/theta[d+1])
-
-          predv[i] <- predv[i] * (exp((3*sig2[j] + 2*sqrt(3)*theta[d+1]*(w2.x3[i] - x.mu[j]))/(2*theta[d+1]^2)) *
-                                    (e1 %*% lambda11 * pnorm((mua - w2.x3[i])/sqrt(sig2[j])) +
-                                       e1 %*% lambda12 * sqrt(sig2[j])/sqrt(2*pi) * exp(-(w2.x3[i] - mua)^2/(2*sig2[j]))) +
-                                    exp((3*sig2[j] - 2*sqrt(3)*theta[d+1]*(w2.x3[i] - x.mu[j]))/(2*theta[d+1]^2)) *
-                                    (e2 %*% lambda21 * pnorm((-mub + w2.x3[i])/sqrt(sig2[j])) +
-                                       e2 %*% lambda12 * sqrt(sig2[j])/sqrt(2*pi) * exp(-(w2.x3[i] - mub)^2/(2*sig2[j]))))
-        }
-        predy[j] <- mu3 + drop(predv%*%a)
+        predy[j] <- mu3 + drop(t(t(cor.sep(t(x[j,]), X3, theta[-(d+1)], nu=1.5)) * # common but depends on kernel
+                                   (exp((3*sig2[j] + 2*sqrt(3)*theta[d+1]*(w2.x3 - x.mu[j]))/(2*theta[d+1]^2)) *
+                                      (e1 %*% lambda11 * pnorm((mua - w2.x3)/sqrt(sig2[j])) +
+                                         e1 %*% lambda12 * sqrt(sig2[j])/sqrt(2*pi) * exp(-(w2.x3 - mua)^2/(2*sig2[j]))) +
+                                      exp((3*sig2[j] - 2*sqrt(3)*theta[d+1]*(w2.x3 - x.mu[j]))/(2*theta[d+1]^2)) *
+                                      (e2 %*% lambda21 * pnorm((-mub + w2.x3)/sqrt(sig2[j])) +
+                                         e2 %*% lambda12 * sqrt(sig2[j])/sqrt(2*pi) * exp(-(w2.x3 - mub)^2/(2*sig2[j]))))) %*% a)
       }
+
 
       # var
       predsig2 <- c(rep(0, nrow(x)))
-
       for(i in 1: nrow(x)){
-        mat <- matrix(1, n, n) # matrix J in Ming's paper
-        for(k in 1:n){
-          for(l in 1:n){
-            for(m in 1:d){ # constant depends on kernel
-              mat[k,l] <- mat[k,l] * matern.kernel(sqrt(distance(t(t(x[i,m])/theta[m]), t(t(X3[k,m])/theta[m]))), nu=1.5) *
-                matern.kernel(sqrt(distance(t(t(x[i,m])/theta[m]), t(t(X3[l,m])/theta[m]))), nu=1.5)
-            } # expected depends on kernel structure
-            mat[k,l] <- mat[k,l] * zetafun(w1=w2.x3[k], w2=w2.x3[l], m=x.mu[i], s=sig2[i], nu=1.5, theta=theta[d+1])
-          }}
+        zeta <- function(x,y){zetafun(w1=x, w2=y, m=x.mu[i], s=sig2[i], nu=1.5, theta=theta[d+1])}
+
+        mat <- drop(t(cor.sep(t(x[i,]), X3, theta[-(d+1)], nu=1.5)) %o% t(cor.sep(t(x[i,]), X3, theta[-(d+1)], nu=1.5))) * # constant depends on kernel
+          outer(w2.x3, w2.x3, FUN=Vectorize(zeta))
 
         predsig2[i] <- pmax(0, tau2hat - (predy[i]-mu3)^2 + drop(t(a)%*%mat%*%a) - tau2hat*sum(diag(Ci%*%mat)))
       }
+
     }else{
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      fit.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
-      x.mu <- fit.RNAmf1$mu
-      sig2 <- fit.RNAmf1$sig2
+      pred.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
+      x.mu <- pred.RNAmf1$mu
+      sig2 <- pred.RNAmf1$sig2
 
       ### calculate the closed form ###
       X3 <- matrix(fit3$X[,-(d+1)], ncol=d)
@@ -236,58 +190,45 @@ predRNAmf2 <- function(fit, x){
 
       # mean
       predy <- c(rep(0, nrow(x)))
-
       for(j in 1: nrow(x)){ # each test point
-        predv <- c(rep(1,n))
-        for(i in 1:n){ # each row of train set
-          for(m in 1:d){ # dim of train set
-            predv[i] <- predv[i] * matern.kernel(sqrt(distance(t(t(x[j,m])/theta[m]), t(t(X3[i,m])/theta[m]))), nu=1.5) # common but depends on kernel
-          } # depends on kernel structure
+        mua <- x.mu[j] - sqrt(3)*sig2[j]/theta[d+1]
+        mub <- x.mu[j] + sqrt(3)*sig2[j]/theta[d+1]
 
-          mua <- x.mu[j] - sqrt(3)*sig2[j]/theta[d+1]
-          mub <- x.mu[j] + sqrt(3)*sig2[j]/theta[d+1]
+        lambda11 <- c(1, mua)
+        lambda12 <- c(0, 1)
+        lambda21 <- c(1, -mub)
 
-          lambda11 <- c(1, mua)
-          lambda12 <- c(0, 1)
-          lambda21 <- c(1, -mub)
+        e1 <- cbind(matrix(1-sqrt(3)*w2.x3/theta[d+1]), sqrt(3)/theta[d+1])
+        e2 <- cbind(matrix(1+sqrt(3)*w2.x3/theta[d+1]), sqrt(3)/theta[d+1])
 
-          e1 <- c(1-sqrt(3)*w2.x3[i]/theta[d+1], sqrt(3)/theta[d+1])
-          e2 <- c(1+sqrt(3)*w2.x3[i]/theta[d+1], sqrt(3)/theta[d+1])
-
-          predv[i] <- predv[i] * (exp((3*sig2[j] + 2*sqrt(3)*theta[d+1]*(w2.x3[i] - x.mu[j]))/(2*theta[d+1]^2)) *
-                                    (e1 %*% lambda11 * pnorm((mua - w2.x3[i])/sqrt(sig2[j])) +
-                                       e1 %*% lambda12 * sqrt(sig2[j])/sqrt(2*pi) * exp(-(w2.x3[i] - mua)^2/(2*sig2[j]))) +
-                                    exp((3*sig2[j] - 2*sqrt(3)*theta[d+1]*(w2.x3[i] - x.mu[j]))/(2*theta[d+1]^2)) *
-                                    (e2 %*% lambda21 * pnorm((-mub + w2.x3[i])/sqrt(sig2[j])) +
-                                       e2 %*% lambda12 * sqrt(sig2[j])/sqrt(2*pi) * exp(-(w2.x3[i] - mub)^2/(2*sig2[j]))))
-        }
-        predy[j] <- drop(predv%*%a)
+        predy[j] <- drop(t(t(cor.sep(t(x[j,]), X3, theta[-(d+1)], nu=1.5)) * # common but depends on kernel
+                             (exp((3*sig2[j] + 2*sqrt(3)*theta[d+1]*(w2.x3 - x.mu[j]))/(2*theta[d+1]^2)) *
+                                (e1 %*% lambda11 * pnorm((mua - w2.x3)/sqrt(sig2[j])) +
+                                   e1 %*% lambda12 * sqrt(sig2[j])/sqrt(2*pi) * exp(-(w2.x3 - mua)^2/(2*sig2[j]))) +
+                                exp((3*sig2[j] - 2*sqrt(3)*theta[d+1]*(w2.x3 - x.mu[j]))/(2*theta[d+1]^2)) *
+                                (e2 %*% lambda21 * pnorm((-mub + w2.x3)/sqrt(sig2[j])) +
+                                   e2 %*% lambda12 * sqrt(sig2[j])/sqrt(2*pi) * exp(-(w2.x3 - mub)^2/(2*sig2[j]))))) %*% a)
       }
 
       # var
       predsig2 <- c(rep(0, nrow(x)))
-
       for(i in 1: nrow(x)){
-        mat <- matrix(1, n, n) # matrix J in Ming's paper
-        for(k in 1:n){
-          for(l in 1:n){
-            for(m in 1:d){ # constant depends on kernel
-              mat[k,l] <- mat[k,l] * matern.kernel(sqrt(distance(t(t(x[i,m])/theta[m]), t(t(X3[k,m])/theta[m]))), nu=1.5) *
-                matern.kernel(sqrt(distance(t(t(x[i,m])/theta[m]), t(t(X3[l,m])/theta[m]))), nu=1.5)
-            } # expected depends on kernel structure
-            mat[k,l] <- mat[k,l] * zetafun(w1=w2.x3[k], w2=w2.x3[l], m=x.mu[i], s=sig2[i], nu=1.5, theta=theta[d+1])
-          }}
+        zeta <- function(x,y){zetafun(w1=x, w2=y, m=x.mu[i], s=sig2[i], nu=1.5, theta=theta[d+1])}
+
+        mat <- drop(t(cor.sep(t(x[i,]), X3, theta[-(d+1)], nu=1.5)) %o% t(cor.sep(t(x[i,]), X3, theta[-(d+1)], nu=1.5))) * # constant depends on kernel
+          outer(w2.x3, w2.x3, FUN=Vectorize(zeta))
 
         predsig2[i] <- pmax(0, tau2hat - predy[i]^2 + drop(t(a)%*%mat%*%a) - tau2hat*sum(diag(Ci%*%mat)))
       }
+
     }
   }else if(kernel=="matern2.5"){
     if(constant){
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      fit.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
-      x.mu <- fit.RNAmf1$mu
-      sig2 <- fit.RNAmf1$sig2
+      pred.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
+      x.mu <- pred.RNAmf1$mu
+      sig2 <- pred.RNAmf1$sig2
 
       ### calculate the closed form ###
       X3 <- matrix(fit3$X[,-(d+1)], ncol=d)
@@ -308,61 +249,47 @@ predRNAmf2 <- function(fit, x){
 
       # mean
       predy <- c(rep(0, nrow(x)))
+      for(j in 1: nrow(x)){ # each test point
+        mua <- x.mu[j] - sqrt(5)*sig2[j]/theta[d+1]
+        mub <- x.mu[j] + sqrt(5)*sig2[j]/theta[d+1]
 
-      for(j in 1: nrow(x)){
-        predv <- c(rep(1,n))
-        for(i in 1:n){
-          for(m in 1:d){
-            predv[i] <- predv[i] * matern.kernel(sqrt(distance(t(t(x[j,m])/theta[m]), t(t(X3[i,m])/theta[m]))), nu=2.5) # common but depends on kernel
-          } # depends on kernel structure
+        lambda11 <- c(1, mua, mua^2+sig2[j])
+        lambda12 <- cbind(0, 1, matrix(mua+w2.x3))
+        lambda21 <- c(1, -mub, mub^2+sig2[j])
+        lambda22 <- cbind(0, 1, matrix(-mub-w2.x3))
 
-          mua <- x.mu[j] - sqrt(5)*sig2[j]/theta[d+1]
-          mub <- x.mu[j] + sqrt(5)*sig2[j]/theta[d+1]
+        e1 <- cbind(matrix(1-sqrt(5)*w2.x3/theta[d+1]+5*w2.x3^2/(3*theta[d+1]^2)),
+                    matrix(sqrt(5)/theta[d+1]-10*w2.x3/(3*theta[d+1]^2)),
+                    5/(3*theta[d+1]^2))
+        e2 <- cbind(matrix(1+sqrt(5)*w2.x3/theta[d+1]+5*w2.x3^2/(3*theta[d+1]^2)),
+                    matrix(sqrt(5)/theta[d+1]+10*w2.x3/(3*theta[d+1]^2)),
+                    5/(3*theta[d+1]^2))
 
-          lambda11 <- c(1, mua, mua^2+sig2[j])
-          lambda12 <- c(0, 1, mua+w2.x3[i])
-          lambda21 <- c(1, -mub, mub^2+sig2[j])
-          lambda22 <- c(0, 1, -mub-w2.x3[i])
-
-          e1 <- c(1-sqrt(5)*w2.x3[i]/theta[d+1]+5*w2.x3[i]^2/(3*theta[d+1]^2),
-                  sqrt(5)/theta[d+1]-10*w2.x3[i]/(3*theta[d+1]^2),
-                  5/(3*theta[d+1]^2))
-          e2 <- c(1+sqrt(5)*w2.x3[i]/theta[d+1]+5*w2.x3[i]^2/(3*theta[d+1]^2),
-                  sqrt(5)/theta[d+1]+10*w2.x3[i]/(3*theta[d+1]^2),
-                  5/(3*theta[d+1]^2))
-
-          predv[i] <- predv[i] * (exp((5*sig2[j] + 2*sqrt(5)*theta[d+1]*(w2.x3[i] - x.mu[j]))/(2*theta[d+1]^2)) *
-                                    (e1 %*% lambda11 * pnorm((mua - w2.x3[i])/sqrt(sig2[j])) +
-                                       e1 %*% lambda12 * sqrt(sig2[j])/sqrt(2*pi) * exp(-(w2.x3[i] - mua)^2/(2*sig2[j]))) +
-                                    exp((5*sig2[j] - 2*sqrt(5)*theta[d+1]*(w2.x3[i] - x.mu[j]))/(2*theta[d+1]^2)) *
-                                    (e2 %*% lambda21 * pnorm((-mub + w2.x3[i])/sqrt(sig2[j])) +
-                                       e2 %*% lambda22 * sqrt(sig2[j])/sqrt(2*pi) * exp(-(w2.x3[i] - mub)^2/(2*sig2[j]))))
-        }
-        predy[j] <- mu3 + drop(predv%*%a)
+        predy[j] <- mu3 + drop(t(t(cor.sep(t(x[j,]), X3, theta[-(d+1)], nu=2.5)) *
+                                   (exp((5*sig2[j] + 2*sqrt(5)*theta[d+1]*(w2.x3 - x.mu[j]))/(2*theta[d+1]^2)) *
+                                      (e1 %*% lambda11 * pnorm((mua - w2.x3)/sqrt(sig2[j])) +
+                                         rowSums(e1 * lambda12) * sqrt(sig2[j])/sqrt(2*pi) * exp(-(w2.x3 - mua)^2/(2*sig2[j]))) +
+                                      exp((5*sig2[j] - 2*sqrt(5)*theta[d+1]*(w2.x3 - x.mu[j]))/(2*theta[d+1]^2)) *
+                                      (e2 %*% lambda21 * pnorm((-mub + w2.x3)/sqrt(sig2[j])) +
+                                         rowSums(e2 * lambda22) * sqrt(sig2[j])/sqrt(2*pi) * exp(-(w2.x3 - mub)^2/(2*sig2[j]))))) %*% a)
       }
 
       # var
       predsig2 <- c(rep(0, nrow(x)))
-
       for(i in 1: nrow(x)){
-        mat <- matrix(1, n, n)
-        for(k in 1:n){
-          for(l in 1:n){
-            for(m in 1:d){ # common but depends on kernel
-              mat[k,l] <- mat[k,l] * matern.kernel(sqrt(distance(t(t(x[i,m])/theta[m]), t(t(X3[k,m])/theta[m]))), nu=2.5) *
-                matern.kernel(sqrt(distance(t(t(x[i,m])/theta[m]), t(t(X3[l,m])/theta[m]))), nu=2.5)
-            } # expected depends on kernel structure
-            mat[k,l] <- mat[k,l] * zetafun(w1=w2.x3[k], w2=w2.x3[l], m=x.mu[i], s=sig2[i], nu=2.5, theta=theta[d+1])
-          }}
+        zeta <- function(x,y){zetafun(w1=x, w2=y, m=x.mu[i], s=sig2[i], nu=2.5, theta=theta[d+1])}
+
+        mat <- drop(t(cor.sep(t(x[i,]), X3, theta[-(d+1)], nu=2.5)) %o% t(cor.sep(t(x[i,]), X3, theta[-(d+1)], nu=2.5))) * # constant depends on kernel
+          outer(w2.x3, w2.x3, FUN=Vectorize(zeta))
 
         predsig2[i] <- pmax(0, tau2hat - (predy[i]-mu3)^2 + drop(t(a)%*%mat%*%a) - tau2hat*sum(diag(Ci%*%mat)))
       }
     }else{
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      fit.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
-      x.mu <- fit.RNAmf1$mu
-      sig2 <- fit.RNAmf1$sig2
+      pred.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
+      x.mu <- pred.RNAmf1$mu
+      sig2 <- pred.RNAmf1$sig2
 
       ### calculate the closed form ###
       X3 <- matrix(fit3$X[,-(d+1)], ncol=d)
@@ -382,52 +309,38 @@ predRNAmf2 <- function(fit, x){
 
       # mean
       predy <- c(rep(0, nrow(x)))
+      for(j in 1: nrow(x)){ # each test point
+        mua <- x.mu[j] - sqrt(5)*sig2[j]/theta[d+1]
+        mub <- x.mu[j] + sqrt(5)*sig2[j]/theta[d+1]
 
-      for(j in 1: nrow(x)){
-        predv <- c(rep(1,n))
-        for(i in 1:n){
-          for(m in 1:d){
-            predv[i] <- predv[i] * matern.kernel(sqrt(distance(t(t(x[j,m])/theta[m]), t(t(X3[i,m])/theta[m]))), nu=2.5) # common but depends on kernel
-          } # depends on kernel structure
+        lambda11 <- c(1, mua, mua^2+sig2[j])
+        lambda12 <- cbind(0, 1, matrix(mua+w2.x3))
+        lambda21 <- c(1, -mub, mub^2+sig2[j])
+        lambda22 <- cbind(0, 1, matrix(-mub-w2.x3))
 
-          mua <- x.mu[j] - sqrt(5)*sig2[j]/theta[d+1]
-          mub <- x.mu[j] + sqrt(5)*sig2[j]/theta[d+1]
+        e1 <- cbind(matrix(1-sqrt(5)*w2.x3/theta[d+1]+5*w2.x3^2/(3*theta[d+1]^2)),
+                    matrix(sqrt(5)/theta[d+1]-10*w2.x3/(3*theta[d+1]^2)),
+                    5/(3*theta[d+1]^2))
+        e2 <- cbind(matrix(1+sqrt(5)*w2.x3/theta[d+1]+5*w2.x3^2/(3*theta[d+1]^2)),
+                    matrix(sqrt(5)/theta[d+1]+10*w2.x3/(3*theta[d+1]^2)),
+                    5/(3*theta[d+1]^2))
 
-          lambda11 <- c(1, mua, mua^2+sig2[j])
-          lambda12 <- c(0, 1, mua+w2.x3[i])
-          lambda21 <- c(1, -mub, mub^2+sig2[j])
-          lambda22 <- c(0, 1, -mub-w2.x3[i])
-
-          e1 <- c(1-sqrt(5)*w2.x3[i]/theta[d+1]+5*w2.x3[i]^2/(3*theta[d+1]^2),
-                  sqrt(5)/theta[d+1]-10*w2.x3[i]/(3*theta[d+1]^2),
-                  5/(3*theta[d+1]^2))
-          e2 <- c(1+sqrt(5)*w2.x3[i]/theta[d+1]+5*w2.x3[i]^2/(3*theta[d+1]^2),
-                  sqrt(5)/theta[d+1]+10*w2.x3[i]/(3*theta[d+1]^2),
-                  5/(3*theta[d+1]^2))
-
-          predv[i] <- predv[i] * (exp((5*sig2[j] + 2*sqrt(5)*theta[d+1]*(w2.x3[i] - x.mu[j]))/(2*theta[d+1]^2)) *
-                                    (e1 %*% lambda11 * pnorm((mua - w2.x3[i])/sqrt(sig2[j])) +
-                                       e1 %*% lambda12 * sqrt(sig2[j])/sqrt(2*pi) * exp(-(w2.x3[i] - mua)^2/(2*sig2[j]))) +
-                                    exp((5*sig2[j] - 2*sqrt(5)*theta[d+1]*(w2.x3[i] - x.mu[j]))/(2*theta[d+1]^2)) *
-                                    (e2 %*% lambda21 * pnorm((-mub + w2.x3[i])/sqrt(sig2[j])) +
-                                       e2 %*% lambda22 * sqrt(sig2[j])/sqrt(2*pi) * exp(-(w2.x3[i] - mub)^2/(2*sig2[j]))))
-        }
-        predy[j] <- drop(predv%*%a)
+        predy[j] <- drop(t(t(cor.sep(t(x[j,]), X3, theta[-(d+1)], nu=2.5)) *
+                             (exp((5*sig2[j] + 2*sqrt(5)*theta[d+1]*(w2.x3 - x.mu[j]))/(2*theta[d+1]^2)) *
+                                (e1 %*% lambda11 * pnorm((mua - w2.x3)/sqrt(sig2[j])) +
+                                   rowSums(e1 * lambda12) * sqrt(sig2[j])/sqrt(2*pi) * exp(-(w2.x3 - mua)^2/(2*sig2[j]))) +
+                                exp((5*sig2[j] - 2*sqrt(5)*theta[d+1]*(w2.x3 - x.mu[j]))/(2*theta[d+1]^2)) *
+                                (e2 %*% lambda21 * pnorm((-mub + w2.x3)/sqrt(sig2[j])) +
+                                   rowSums(e2 * lambda22) * sqrt(sig2[j])/sqrt(2*pi) * exp(-(w2.x3 - mub)^2/(2*sig2[j]))))) %*% a)
       }
 
       # var
       predsig2 <- c(rep(0, nrow(x)))
-
       for(i in 1: nrow(x)){
-        mat <- matrix(1, n, n)
-        for(k in 1:n){
-          for(l in 1:n){
-            for(m in 1:d){ # common but depends on kernel
-              mat[k,l] <- mat[k,l] * matern.kernel(sqrt(distance(t(t(x[i,m])/theta[m]), t(t(X3[k,m])/theta[m]))), nu=2.5) *
-                matern.kernel(sqrt(distance(t(t(x[i,m])/theta[m]), t(t(X3[l,m])/theta[m]))), nu=2.5)
-            } # expected depends on kernel structure
-            mat[k,l] <- mat[k,l] * zetafun(w1=w2.x3[k], w2=w2.x3[l], m=x.mu[i], s=sig2[i], nu=2.5, theta=theta[d+1])
-          }}
+        zeta <- function(x,y){zetafun(w1=x, w2=y, m=x.mu[i], s=sig2[i], nu=2.5, theta=theta[d+1])}
+
+        mat <- drop(t(cor.sep(t(x[i,]), X3, theta[-(d+1)], nu=2.5)) %o% t(cor.sep(t(x[i,]), X3, theta[-(d+1)], nu=2.5))) * # constant depends on kernel
+          outer(w2.x3, w2.x3, FUN=Vectorize(zeta))
 
         predsig2[i] <- pmax(0, tau2hat - predy[i]^2 + drop(t(a)%*%mat%*%a) - tau2hat*sum(diag(Ci%*%mat)))
       }
