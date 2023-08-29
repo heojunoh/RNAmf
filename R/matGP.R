@@ -27,7 +27,7 @@
 #'   \item \code{constant}: copy of constant.
 #' }
 #'
-#' @importFrom stats optim
+#' @importFrom stats optim quantile
 #' @noRd
 #' @keywords internal
 #' @examples
@@ -90,12 +90,36 @@ matGP <- function(X, y, nu=2.5, g=sqrt(.Machine$double.eps),
       return(-ll)
     }
 
-    outg <- optim(init, nlsep, method="L-BFGS-B", lower=lower, upper=upper, X=X, Y=y)
+    # gradnlsep <- function(par, X, Y)
+    # {
+    #   theta <- par
+    #   n <- length(Y)
+    #   K <- cor.sep(X, theta=theta, nu=nu)
+    #   Ki <- solve(K+diag(g,n))
+    #   KiY <- Ki %*% Y
+    #
+    #   ## loop over theta components
+    #   dlltheta <- rep(NA, length(theta))
+    #   # dK <- matern.kernel(R, nu=nu, derivative = 1)
+    #   dK <- cor.sep(X, theta=theta, nu=nu, derivative = 1)
+    #   for(j in 1:length(dlltheta)) {
+    #     dotK <- dK * (-distance(X[,j])/(theta[j]^3)/R)
+    #     diag(dotK) <- rep(0, n)
+    #     dlltheta[j] <- (n/2) * t(KiY) %*% dotK %*% KiY / (t(Y) %*% KiY) -
+    #       (1/2)*sum(diag(Ki %*% dotK))
+    #   }
+    #
+    #   return(-c(dlltheta))
+    # }
+
+    outg <- optim(init, nlsep, #gradnlsep,
+                  method="L-BFGS-B", lower=lower, upper=upper, X=X, Y=y)
 
     theta <- outg$par
 
-    R <- sqrt(distance(t(t(X)/theta)))
-    K <- matern.kernel(R, nu=nu)
+    # R <- sqrt(distance(t(t(X)/theta)))
+    # K <- matern.kernel(R, nu=nu)
+    K <- cor.sep(X, theta=theta, nu=nu)
     Ki <- solve(K+diag(g,n))
     one.vec <- matrix(1,ncol=1,nrow=n)
     mu.hat <- drop((t(one.vec)%*%Ki%*%y)/(t(one.vec)%*%Ki%*%one.vec))
@@ -113,7 +137,16 @@ matGP <- function(X, y, nu=2.5, g=sqrt(.Machine$double.eps),
       attr(X,"scaled:scale") <- rep(1, ncol(X))
     }
 
-    init <- rep(1*sqrt(ncol(X)), ncol(X))
+    # # darg way
+    # init <- rep(sort(distance(X))[sort(distance(X))!=0][0.1*length(sort(distance(X))[sort(distance(X))!=0])], ncol(X))
+    # lower <- min(sort(distance(X))[sort(distance(X))!=0])
+    # upper <- max(sort(distance(X))[sort(distance(X))!=0])
+
+    # hetGP way
+    lower <- - quantile(distance(X)[lower.tri(distance(X))], 0.05)/log(0.01) * (apply(X, 2, range)[2,] - apply(X, 2, range)[1,])^2
+    upper <- - quantile(distance(X)[lower.tri(distance(X))], 0.95)/log(0.5) * (apply(X, 2, range)[2,] - apply(X, 2, range)[1,])^2
+    init <- sqrt(lower*upper)
+
     n <- length(y)
     if(Yscale) y <- scale(y, center=TRUE, scale=FALSE) # If use mean, don't scale
 
