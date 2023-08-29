@@ -63,13 +63,13 @@ RNAmf2 <- function(X1, y1, X2, y2, X3, y3, kernel, constant=FALSE){
 
       fit1 <- fit.RNAmf1$fit1
       fit2 <- fit.RNAmf1$fit2
-      fit3 <- matGP(cbind(X3, pred.matGP(fit2, cbind(X3, pred.matGP(fit1, X3)$mu))$mu), y3, nu=2.5)
+      fit3 <- matGP(cbind(X3, pred.matGP(fit2, cbind(X3, pred.matGP(fit1, X3)$mu))$mu), y3, nu=2.5, constant=TRUE)
     }else{
       fit.RNAmf1 <- RNAmf(X1, y1, X2, y2, kernel="matern2.5")
 
       fit1 <- fit.RNAmf1$fit1
       fit2 <- fit.RNAmf1$fit2
-      fit3 <- matGP(cbind(X3, pred.matGP(fit2, cbind(X3, pred.matGP(fit1, X3)$mu))$mu), y3, nu=2.5, constant=TRUE)
+      fit3 <- matGP(cbind(X3, pred.matGP(fit2, cbind(X3, pred.matGP(fit1, X3)$mu))$mu), y3, nu=2.5)
     }
   }
 
