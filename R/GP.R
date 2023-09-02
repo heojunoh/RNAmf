@@ -54,11 +54,13 @@ GP <- function(X, y, g=sqrt(.Machine$double.eps),
 
     if(is.null(dim(X))) X <- matrix(X, ncol = 1)
 
-    if(Xscale){
-      X <- scale(X, center = TRUE, scale = TRUE)
-    }else{
-      attr(X,"scaled:center") <- rep(0, ncol(X))
-      attr(X,"scaled:scale") <- rep(1, ncol(X))
+    parbound <- function(XX){
+      XX <- matrix(XX, ncol = 1)
+
+      lower = - quantile(distance(XX)[lower.tri(distance(XX))], 0.05)/log(0.01) * (apply(XX, 2, range)[2,] - apply(XX, 2, range)[1,])^2
+      upper = - quantile(distance(XX)[lower.tri(distance(XX))], 0.95)/log(0.5) * (apply(XX, 2, range)[2,] - apply(XX, 2, range)[1,])^2
+
+      return(c(lower, upper))
     }
 
     # # darg way
@@ -66,10 +68,35 @@ GP <- function(X, y, g=sqrt(.Machine$double.eps),
     # lower <- min(sort(distance(X))[sort(distance(X))!=0])
     # upper <- max(sort(distance(X))[sort(distance(X))!=0])
 
+    # # hetGP way
+    # XX <- (X - matrix(apply(X, 2, range)[1,], nrow = nrow(X), ncol = ncol(X), byrow = TRUE)) %*% diag(1/(apply(X, 2, range)[2,] - apply(X, 2, range)[1,]), ncol(X))
+    # lower <- 10*- quantile(distance(XX)[lower.tri(distance(XX))], 0.05)/log(0.01) * (apply(XX, 2, range)[2,] - apply(XX, 2, range)[1,])^2
+    # upper <- 10*- quantile(distance(XX)[lower.tri(distance(XX))], 0.95)/log(0.5) * (apply(XX, 2, range)[2,] - apply(XX, 2, range)[1,])^2
+    # init <- sqrt(lower*upper)
+
     # hetGP way
-    lower <- - quantile(distance(X)[lower.tri(distance(X))], 0.05)/log(0.01) * (apply(X, 2, range)[2,] - apply(X, 2, range)[1,])^2
-    upper <- - quantile(distance(X)[lower.tri(distance(X))], 0.95)/log(0.5) * (apply(X, 2, range)[2,] - apply(X, 2, range)[1,])^2
+    XX <- (X - matrix(apply(X, 2, range)[1,], nrow = nrow(X), ncol = ncol(X), byrow = TRUE)) %*% diag(1/(apply(X, 2, range)[2,] - apply(X, 2, range)[1,]), ncol(X))
+    if((range(y)[2]-range(y)[1]) < 10){
+      lower <- 10*apply(XX, 2, parbound)[1,]
+      upper <- 10*apply(XX, 2, parbound)[2,]
+    }else{
+      lower <- 10000*apply(XX, 2, parbound)[1,]
+      upper <- 10000*apply(XX, 2, parbound)[2,]
+    }
     init <- sqrt(lower*upper)
+
+    # # hetGP way
+    # XX <- (X - matrix(apply(X, 2, range)[1,], nrow = nrow(X), ncol = ncol(X), byrow = TRUE)) %*% diag(1/(apply(X, 2, range)[2,] - apply(X, 2, range)[1,]), ncol(X))
+    # lower <- apply(XX, 2, parbound)[1,]
+    # upper <- apply(XX, 2, parbound)[2,]
+    # init <- sqrt(lower*upper)
+
+    if(Xscale){
+      X <- scale(X, center = TRUE, scale = TRUE)
+    }else{
+      attr(X,"scaled:center") <- rep(0, ncol(X))
+      attr(X,"scaled:scale") <- rep(1, ncol(X))
+    }
 
     n <- length(y)
 
@@ -116,18 +143,13 @@ GP <- function(X, y, g=sqrt(.Machine$double.eps),
     one.vec <- matrix(1,ncol=1,nrow=n)
     mu.hat <- drop((t(one.vec)%*%Ki%*%y)/(t(one.vec)%*%Ki%*%one.vec))
     tau2hat <- drop(t(y-mu.hat) %*% Ki %*% (y-mu.hat) / nrow(X))
+    theta <- outg$par
+    names(theta) <- NULL
 
-    return(list(theta = outg$par, g=g, Ki=Ki, mu.hat=mu.hat, X = X, y = y, tau2hat=tau2hat, Xscale=Xscale, constant=constant))
+    return(list(theta = theta, g=g, Ki=Ki, mu.hat=mu.hat, X = X, y = y, tau2hat=tau2hat, Xscale=Xscale, constant=constant))
   }else{
 
     if(is.null(dim(X))) X <- matrix(X, ncol = 1)
-
-    if(Xscale){
-      X <- scale(X, center = TRUE, scale = TRUE)
-    }else{
-      attr(X,"scaled:center") <- rep(0, ncol(X))
-      attr(X,"scaled:scale") <- rep(1, ncol(X))
-    }
 
     # # darg way
     # init <- rep(sort(distance(X))[sort(distance(X))!=0][0.1*length(sort(distance(X))[sort(distance(X))!=0])], ncol(X))
@@ -135,9 +157,17 @@ GP <- function(X, y, g=sqrt(.Machine$double.eps),
     # upper <- max(sort(distance(X))[sort(distance(X))!=0])
 
     # hetGP way
-    lower <- - quantile(distance(X)[lower.tri(distance(X))], 0.05)/log(0.01) * (apply(X, 2, range)[2,] - apply(X, 2, range)[1,])^2
-    upper <- - quantile(distance(X)[lower.tri(distance(X))], 0.95)/log(0.5) * (apply(X, 2, range)[2,] - apply(X, 2, range)[1,])^2
+    XX <- (X - matrix(apply(X, 2, range)[1,], nrow = nrow(X), ncol = ncol(X), byrow = TRUE)) %*% diag(1/(apply(X, 2, range)[2,] - apply(X, 2, range)[1,]), ncol(X))
+    lower <- - quantile(distance(XX)[lower.tri(distance(XX))], 0.05)/log(0.01) * (apply(XX, 2, range)[2,] - apply(XX, 2, range)[1,])^2
+    upper <- - quantile(distance(XX)[lower.tri(distance(XX))], 0.95)/log(0.5) * (apply(XX, 2, range)[2,] - apply(XX, 2, range)[1,])^2
     init <- sqrt(lower*upper)
+
+    if(Xscale){
+      X <- scale(X, center = TRUE, scale = TRUE)
+    }else{
+      attr(X,"scaled:center") <- rep(0, ncol(X))
+      attr(X,"scaled:scale") <- rep(1, ncol(X))
+    }
 
     n <- length(y)
     if(Yscale) y <- scale(y, center=TRUE, scale=FALSE) # If use mean, don't scale
@@ -158,7 +188,9 @@ GP <- function(X, y, g=sqrt(.Machine$double.eps),
     Ki <- solve(K)
     tau2hat <- drop(t(y) %*% Ki %*% y / n)
     mu.hat <- 0
+    theta <- outg$par
+    names(theta) <- NULL
 
-    return(list(theta = outg$par, g=g, Ki=Ki, mu.hat=mu.hat, X = X, y = y, tau2hat=tau2hat, Xscale=Xscale, Yscale=Yscale, constant=constant))
+    return(list(theta = theta, g=g, Ki=Ki, mu.hat=mu.hat, X = X, y = y, tau2hat=tau2hat, Xscale=Xscale, Yscale=Yscale, constant=constant))
   }
 }
