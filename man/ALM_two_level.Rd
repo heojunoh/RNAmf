@@ -2,7 +2,7 @@
 % Please edit documentation in R/ALM_two_level.R
 \name{ALM_two_level}
 \alias{ALM_two_level}
-\title{ALM_two_level}
+\title{ALM_two_level_optm}
 \usage{
 ALM_two_level(fit, cost, funcs)
 }
@@ -17,8 +17,8 @@ ALM_two_level(fit, cost, funcs)
 A list containing the integrated one-step ahead variance:
 \itemize{
   \item \code{fit}: fitted model after acquire chosen point.
-  \item \code{predsig2.low}: vector of posterior predictive variance on Xcand at level 1.
-  \item \code{predsig2}: vector of posterior predictive variance on Xcand at level 2.
+  \item \code{predsig2.low}: vector of predictive variance of optimized data point at level 1.
+  \item \code{predsig2}: vector of predictive variance of optimized data point at level 2.
   \item \code{cost}: vector of the costs for each level of fidelity.
   \item \code{Xcand}: candidate data points considered to be acquired.
   \item \code{chosen}: list of chosen level, location, and point.

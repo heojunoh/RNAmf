@@ -1,4 +1,49 @@
-#' ALM_two_level
+#' obj.ALM_two_level_1
+#'
+#' object to optimize the point by ALM criterion updating at level 1 with two levels of fidelity
+#'
+#' @param Xcand candidate data point to be optimized.
+#' @param fit an object of class RNAmf.
+#' @return A mean of the negative predictive posterior variance at Xcand.
+#' @export
+#'
+
+obj.ALM_two_level_1 <- function(Xcand, fit){
+
+  newx <- matrix(Xcand, nrow=1)
+  fit1 <- fit$fit1
+  kernel <- fit$kernel
+
+  ### calculate the posterior predictive variance ###
+  if(kernel=="sqex"){
+    predsig2 <- pred.GP(fit1, newx)$sig2
+  }else if(kernel=="matern1.5"){
+    predsig2 <- pred.matGP(fit1, newx)$sig2
+  }else if(kernel=="matern2.5"){
+    predsig2 <- pred.matGP(fit1, newx)$sig2
+  }
+
+  -predsig2 # to maximize the current variance.
+}
+
+
+#' obj.ALM_two_level_2
+#'
+#' object to optimize the point by ALM criterion updating at level 2 with two levels of fidelity
+#'
+#' @param Xcand candidate data point to be optimized.
+#' @param fit an object of class RNAmf.
+#' @return A mean of the negative predictive posterior variance at Xcand.
+#' @export
+#'
+
+obj.ALM_two_level_2 <- function(Xcand, fit){
+  newx <- matrix(Xcand, nrow=1)
+  -predRNAmf(fit, newx)$sig2 # to maximize the current variance.
+}
+
+
+#' ALM_two_level_optm
 #'
 #' find the next point by ALM criterion with two fidelity levels and update the model
 #'
@@ -8,13 +53,17 @@
 #' @return A list containing the integrated one-step ahead variance:
 #' \itemize{
 #'   \item \code{fit}: fitted model after acquire chosen point.
-#'   \item \code{predsig2.low}: vector of posterior predictive variance on Xcand at level 1.
-#'   \item \code{predsig2}: vector of posterior predictive variance on Xcand at level 2.
+#'   \item \code{predsig2.low}: vector of predictive variance of optimized data point at level 1.
+#'   \item \code{predsig2}: vector of predictive variance of optimized data point at level 2.
 #'   \item \code{cost}: vector of the costs for each level of fidelity.
 #'   \item \code{Xcand}: candidate data points considered to be acquired.
 #'   \item \code{chosen}: list of chosen level, location, and point.
 #' }
+#' @importFrom plgp covar.sep
 #' @importFrom maximin maximin
+#' @importFrom foreach foreach
+#' @importFrom foreach %dopar%
+#' @importFrom doParallel registerDoParallel
 #' @export
 #'
 
@@ -22,6 +71,8 @@ ALM_two_level <- function(fit, cost, funcs){
 
   if (length(cost)!=2) stop("The length of cost should be 2")
   if (cost[1] >= cost[2]) stop("If the cost for high-fidelity is cheaper, just acquire the high-fidelity")
+
+  registerDoParallel(5)
 
   fit1 <- fit$fit1
   fit2 <- fit$fit2
@@ -44,23 +95,33 @@ ALM_two_level <- function(fit, cost, funcs){
                      Xorig=t(t(fit1$X) * x.scale1 + x.center1))$Xf
   }
 
-  ### calculate the posterior predictive variance ###
-  if(kernel=="sqex"){
-    predsig2.low <- pred.GP(fit1, Xcand)$sig2
-  }else if(kernel=="matern1.5"){
-    predsig2.low <- pred.matGP(fit1, Xcand)$sig2
-  }else if(kernel=="matern2.5"){
-    predsig2.low <- pred.matGP(fit1, Xcand)$sig2
+  ### Optimize at level 1 ###
+  optm.mat <- foreach(i = 1:nrow(Xcand), .combine=rbind) %dopar% {
+
+    ### Optimize at level 1 ###
+    out1 <- optim(Xcand[i,], obj.ALM_two_level_1, method="L-BFGS-B", lower=0, upper=1, fit=fit)
+    ### Optimize at level 2 ###
+    out2 <- optim(Xcand[i,], obj.ALM_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit)
+
+    return(-c(out1$val, out2$val))
   }
-  predsig2 <- predRNAmf(fit, Xcand)$sig2
 
 
   ### Find the next point ###
-  ALMvalue <- c(predsig2.low[which.max(predsig2.low)], predsig2[which.max(predsig2)])/c(cost[1], cost[1]+cost[2])
+  ALMvalue <- c(optm.mat[,1][which.max(optm.mat[,1])], optm.mat[,2][which.max(optm.mat[,2])])/c(cost[1], cost[1]+cost[2])
+
+  if(which.max(ALMvalue)==1){
+    newx <- matrix(Xcand[which.max(optm.mat[,1]),], nrow=1)
+    location <- optim(newx, obj.ALM_two_level_1, method="L-BFGS-B", lower=0, upper=1, fit=fit)$par
+  }else if(which.max(ALMvalue)==2){
+    newx <- matrix(Xcand[which.max(optm.mat[,2]),], nrow=1)
+    location <- optim(newx, obj.ALM_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit)$par
+  }
 
   chosen <- list("level"=which.max(ALMvalue), # next level
-                 "location"=c(which.max(predsig2.low), which.max(predsig2))[which.max(ALMvalue)], # next location
-                 "Xnext"=Xcand[c(which.max(predsig2.low), which.max(predsig2))[which.max(ALMvalue)],]) # next point
+                 "location"=which.max(optm.mat[,which.max(ALMvalue)]), # next location
+                 "Xnext"=location) # next point
+  names(chosen$level) <- names(chosen$location) <- NULL
 
 
   ### Update the model ###
@@ -101,5 +162,5 @@ ALM_two_level <- function(fit, cost, funcs){
   fit <- RNAmf(X1, y1, X2, y2, kernel=kernel, constant=constant)
 
 
-  return(list(fit=fit, predsig2.low=predsig2.low, predsig2=predsig2, cost=cost, Xcand=Xcand, chosen=chosen))
+  return(list(fit=fit, predsig2.low=optm.mat[,1], predsig2=optm.mat[,2], cost=cost, Xcand=Xcand, chosen=chosen))
 }

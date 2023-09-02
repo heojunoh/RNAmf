@@ -4,7 +4,7 @@
 \alias{ALC_two_level}
 \title{ALC_two_level}
 \usage{
-ALC_two_level(Xref, fit, mc.sample = 100, cost, funcs)
+ALC_two_level(Xref = NULL, fit, mc.sample = 100, cost, funcs)
 }
 \arguments{
 \item{Xref}{vector or matrix of reference data.}
