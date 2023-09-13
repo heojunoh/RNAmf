@@ -399,9 +399,15 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, p
   print(proc.time()[3]- time.start)
 
   ALCvalue <- c(Icurrent - ALC.1, Icurrent - ALC.2)/c(cost[1], cost[1]+cost[2])
-  Xnext <- c(Xnext.1, Xnext.2)[which.max(ALCvalue)]
-
-  chosen <- list("level"=which.max(ALCvalue), # next level
+  if(ALCvalue[2] > ALCvalue[1]){
+    level <- 2
+    Xnext <- Xnext.2
+  }else{
+    level <- 1
+    Xnext <- Xnext.1
+  }
+  
+  chosen <- list("level"=level, # next level
                  "Xnext"=Xnext) # next point
 
 
