@@ -4,9 +4,11 @@
 #'
 #' @param Xcand candidate data point to be optimized.
 #' @param Xref vector or matrix of reference data.
-#' @param y1.sample a scalar that replaces y1.
 #' @param fit an object of class RNAmf.
-#' @return A mean of the predictive posterior variance at Xref.
+#' @param mc.sample a number of mc samples generated for this approach. Default is 100.
+#' @param parallel logical indicating whether to run parallel or not. Default is FALSE.
+#' @param ncore the number of core for parallel. Default is 1.
+#' @return A mean of the deduced variance at Xref.
 #' @importFrom plgp covar.sep
 #' @importFrom stats rnorm
 #' @importFrom maximin maximin
@@ -37,7 +39,7 @@ obj.ALC_two_level_1 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
   }else if(kernel=="matern2.5"){
     y1.sample <- rnorm(mc.sample, mean=pred.matGP(f1, Xcand)$mu, sd=sqrt(pred.matGP(f1, Xcand)$sig2))
   }
-  
+
   Xcand <- matrix((Xcand-x.center1)/x.scale1, nrow=1)
 
   ### Choose level 1 ###
@@ -63,7 +65,7 @@ obj.ALC_two_level_1 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
   attr(fit1$X, "scaled:center") <- x.center1
   attr(fit1$X, "scaled:scale") <- x.scale1
 
-  
+
   ALC.out <- rep(0, mc.sample)
   if(parallel){
     ALC.out <- foreach(i = 1:mc.sample, .combine=c) %dopar% {
@@ -75,9 +77,9 @@ obj.ALC_two_level_1 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
         attr(fit1$y, "scaled:center") <- y.center1
       }
       fit1$tau2hat <- drop(t(fit1$y - fit1$mu.hat) %*% fit1$Ki %*% (fit1$y - fit1$mu.hat) / length(fit1$y))
-      
+
       fit.tmp$fit1 <- fit1
-      
+
       return(mean(predRNAmf(fit.tmp, Xref)$sig2)) # to minimize the deduced variance. To maximize, -mean
     }
   }else{
@@ -90,9 +92,9 @@ obj.ALC_two_level_1 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
         attr(fit1$y, "scaled:center") <- y.center1
       }
       fit1$tau2hat <- drop(t(fit1$y - fit1$mu.hat) %*% fit1$Ki %*% (fit1$y - fit1$mu.hat) / length(fit1$y))
-      
+
       fit.tmp$fit1 <- fit1
-      
+
       ALC.out[i] <- mean(predRNAmf(fit.tmp, Xref)$sig2) # to minimize the deduced variance. To maximize, -mean
     }
   }
@@ -106,9 +108,11 @@ obj.ALC_two_level_1 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
 #'
 #' @param Xcand candidate data point to be optimized.
 #' @param Xref vector or matrix of reference data.
-#' @param y1.sample a scalar that replaces y1.
 #' @param fit an object of class RNAmf.
-#' @return A mean of the predictive posterior variance at Xref.
+#' @param mc.sample a number of mc samples generated for this approach. Default is 100.
+#' @param parallel logical indicating whether to run parallel or not. Default is FALSE.
+#' @param ncore the number of core for parallel. Default is 1.
+#' @return A mean of the deduced variance at Xref.
 #' @importFrom plgp covar.sep
 #' @importFrom stats rnorm
 #' @importFrom maximin maximin
@@ -173,11 +177,11 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
         fit1$y <- c(f1$y, y1.sample[i]-y.center1)
         attr(fit1$y, "scaled:center") <- y.center1
       }
-      
+
       fit1$tau2hat <- drop(t(fit1$y - fit1$mu.hat) %*% fit1$Ki %*% (fit1$y - fit1$mu.hat) / length(fit1$y))
-      
+
       fit.tmp$fit1 <- fit1
-      
+
       ### Choose level 2 ###
       if(kernel=="sqex"){
         pred2 <- pred.GP(fit2, cbind(Xcand, y1.sample[i]))
@@ -189,10 +193,10 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
         pred2 <- pred.matGP(fit2, cbind(Xcand, y1.sample[i]))
         y2.sample <- rnorm(1, pred2$mu, sqrt(pred2$sig2))
       }
-      
+
       ### update Ki2
       newx2 <- t((t(cbind(Xcand, y1.sample[i]))-x.center2)/x.scale2)
-      
+
       if(kernel=="sqex"){
         cov.newx2 <- covar.sep(X1=newx2, d=f2$theta, g=g)
         cov.Xnewx2 <- covar.sep(X1=f2$X, X2=newx2, d=f2$theta, g=0)
@@ -205,25 +209,25 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
       }
       v.next2 <- drop(cov.newx2 - t(cov.Xnewx2) %*% f2$Ki %*% cov.Xnewx2)
       g.next2 <- - 1/drop(v.next2) * f2$Ki %*% cov.Xnewx2
-      
+
       fit2$Ki <- rbind(cbind(f2$Ki+g.next2%*%t(g.next2)*v.next2, g.next2),
                        cbind(t(g.next2), 1/drop(v.next2)))
-      
+
       fit2$X <- rbind(f2$X, newx2)
       attr(fit2$X, "scaled:center") <- x.center2
       attr(fit2$X, "scaled:scale") <- x.scale2
-      
+
       if(constant){
         fit2$y <- c(f2$y, y2.sample)
       }else{
         fit2$y <- c(f2$y, y2.sample-y.center2)
         attr(fit2$y, "scaled:center") <- y.center2
       }
-      
+
       fit2$tau2hat <- drop(t(fit2$y - fit2$mu.hat) %*% fit2$Ki %*% (fit2$y - fit2$mu.hat) / length(fit2$y))
-      
+
       fit.tmp$fit2 <- fit2
-      
+
       return(mean(predRNAmf(fit.tmp, Xref)$sig2)) # to minimize the deduced variance. To maximize, -mean
     }
   }else{
@@ -236,11 +240,11 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
         fit1$y <- c(f1$y, y1.sample[i]-y.center1)
         attr(fit1$y, "scaled:center") <- y.center1
       }
-      
+
       fit1$tau2hat <- drop(t(fit1$y - fit1$mu.hat) %*% fit1$Ki %*% (fit1$y - fit1$mu.hat) / length(fit1$y))
-      
+
       fit.tmp$fit1 <- fit1
-      
+
       ### Choose level 2 ###
       if(kernel=="sqex"){
         pred2 <- pred.GP(fit2, cbind(Xcand, y1.sample[i]))
@@ -252,10 +256,10 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
         pred2 <- pred.matGP(fit2, cbind(Xcand, y1.sample[i]))
         y2.sample <- rnorm(1, pred2$mu, sqrt(pred2$sig2))
       }
-      
+
       ### update Ki2
       newx2 <- t((t(cbind(Xcand, y1.sample[i]))-x.center2)/x.scale2)
-      
+
       if(kernel=="sqex"){
         cov.newx2 <- covar.sep(X1=newx2, d=f2$theta, g=g)
         cov.Xnewx2 <- covar.sep(X1=f2$X, X2=newx2, d=f2$theta, g=0)
@@ -268,29 +272,29 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
       }
       v.next2 <- drop(cov.newx2 - t(cov.Xnewx2) %*% f2$Ki %*% cov.Xnewx2)
       g.next2 <- - 1/drop(v.next2) * f2$Ki %*% cov.Xnewx2
-      
+
       fit2$Ki <- rbind(cbind(f2$Ki+g.next2%*%t(g.next2)*v.next2, g.next2),
                        cbind(t(g.next2), 1/drop(v.next2)))
-      
+
       fit2$X <- rbind(f2$X, newx2)
       attr(fit2$X, "scaled:center") <- x.center2
       attr(fit2$X, "scaled:scale") <- x.scale2
-      
+
       if(constant){
         fit2$y <- c(f2$y, y2.sample)
       }else{
         fit2$y <- c(f2$y, y2.sample-y.center2)
         attr(fit2$y, "scaled:center") <- y.center2
       }
-      
+
       fit2$tau2hat <- drop(t(fit2$y - fit2$mu.hat) %*% fit2$Ki %*% (fit2$y - fit2$mu.hat) / length(fit2$y))
-      
+
       fit.tmp$fit2 <- fit2
-      
+
       ALC.out[i] <- mean(predRNAmf(fit.tmp, Xref)$sig2) # to minimize the deduced variance. To maximize, -mean
     }
   }
-  
+
   return(mean(ALC.out))
 }
 
@@ -303,7 +307,9 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
 #' @param mc.sample a number of mc samples generated for this approach. Default is 100.
 #' @param cost a vector of the costs for each level of fidelity.
 #' @param funcs list of functions for each level of fidelity.
-#' @param ncore the number of core for parallel.
+#' @param n.start a number of candidate point. Default is 10*d.
+#' @param parallel logical indicating whether to run parallel or not. Default is FALSE.
+#' @param ncore the number of core for parallel. Default is 1.
 #' @return A list containing the integrated one-step ahead variance:
 #' \itemize{
 #'   \item \code{fit}: fitted model after acquire chosen point.
@@ -329,8 +335,8 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, p
   if(cost[1] >= cost[2]) stop("If the cost for high-fidelity is cheaper, just acquire the high-fidelity")
   if(is.null(Xref)) Xref <- randomLHS(dim(fit$fit1$X)[1], dim(fit$fit1$X)[2])
   if(missing(n.start)) n.start <- 10 * dim(fit$fit1$X)[2]
-  if(parallel) registerDoParallel(ncore) 
-  
+  if(parallel) registerDoParallel(ncore)
+
   Icurrent <- mean(predRNAmf(fit, Xref)$sig2)
 
   fit1 <- f1 <- fit$fit1
@@ -347,23 +353,18 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, p
   x.scale2 <- attr(fit2$X, "scaled:scale")
   y.center2 <- attr(fit2$y, "scaled:center")
 
-  # if(ncol(fit1$X)==1){ # Xcand
-  #   Xcand <- maximin.1d(Xorig=t(t(fit1$X) * x.scale1 + x.center1))
-  # }else{
-  #   Xcand <- maximin.multid(Xorig=t(t(fit1$X) * x.scale1 + x.center1))
-  # }
-  
+  ### Generate the candidate set ###
   Xcand <- maximinLHS(n.start, ncol(fit1$X))
-  Xcand <- t(t(Xcand) * x.scale1 + x.center1)
 
+  ### Calculate the deduced variance ###
   cat("running starting points: \n")
   time.start <- proc.time()[3]
   if(parallel){
     pseudointvar <- foreach(i = 1:nrow(Xcand), .combine=cbind) %dopar% {
       newx <- matrix(Xcand[i,], nrow=1)
-      
+
       return(c(obj.ALC_two_level_1(newx, Xref, fit, mc.sample),
-               obj.ALC_two_level_2(newx, Xref, fit, mc.sample))) 
+               obj.ALC_two_level_2(newx, Xref, fit, mc.sample)))
     }
     intvar1 <- pseudointvar[,1]
     intvar2 <- pseudointvar[,2]
@@ -373,13 +374,13 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, p
     for(i in 1:nrow(Xcand)){
       print(paste(i, nrow(Xcand), sep="/"))
       newx <- matrix(Xcand[i,], nrow=1)
-      
+
       intvar1[i] <- obj.ALC_two_level_1(newx, Xref, fit, mc.sample)
       intvar2[i] <- obj.ALC_two_level_2(newx, Xref, fit, mc.sample)
     }
   }
   print(proc.time()[3]- time.start)
-  
+
   ### Find the next point ###
   cat("running optim for level 1: \n")
   time.start <- proc.time()[3]
@@ -388,7 +389,7 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, p
   Xnext.1 <- optim.out$par
   ALC.1 <- optim.out$value
   print(proc.time()[3]- time.start)
-  
+
   cat("running optim for level 2: \n")
   time.start <- proc.time()[3]
   X.start <- matrix(Xcand[which.min(intvar2),], nrow=1)
@@ -396,10 +397,10 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, p
   Xnext.2 <- optim.out$par
   ALC.2 <- optim.out$value
   print(proc.time()[3]- time.start)
-  
+
   ALCvalue <- c(Icurrent - ALC.1, Icurrent - ALC.2)/c(cost[1], cost[1]+cost[2])
   Xnext <- c(Xnext.1, Xnext.2)[which.max(ALCvalue)]
- 
+
   chosen <- list("level"=which.max(ALCvalue), # next level
                  "Xnext"=Xnext) # next point
 
@@ -441,7 +442,7 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, p
   }
 
   fit <- RNAmf(X1, y1, X2, y2, kernel=kernel, constant=constant)
-  
+
   if(parallel)  stopImplicitCluster()
 
   return(list(fit=fit, intvar1=intvar1, intvar2=intvar2, cost=cost, Xcand=Xcand, chosen=chosen))
