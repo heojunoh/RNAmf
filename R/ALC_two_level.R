@@ -66,7 +66,6 @@ obj.ALC_two_level_1 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
   
   ALC.out <- rep(0, mc.sample)
   if(parallel){
-    registerDoParallel(ncore)
     ALC.out <- foreach(i = 1:mc.sample, .combine=c) %dopar% {
       fit.tmp <- fit
       if(constant){
@@ -81,7 +80,6 @@ obj.ALC_two_level_1 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
       
       return(mean(predRNAmf(fit.tmp, Xref)$sig2)) # to minimize the deduced variance. To maximize, -mean
     }
-    stopImplicitCluster()
   }else{
     for(i in 1:mc.sample){
       fit.tmp <- fit
@@ -167,7 +165,6 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
   attr(fit1$X, "scaled:scale") <- x.scale1
 
   if(parallel){
-    registerDoParallel(ncore)
     ALC.out <- foreach(i = 1:mc.sample, .combine=c) %dopar% {
       fit.tmp <- fit
       if(constant){
@@ -229,7 +226,6 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
       
       return(mean(predRNAmf(fit.tmp, Xref)$sig2)) # to minimize the deduced variance. To maximize, -mean
     }
-    stopImplicitCluster()
   }else{
     ALC.out <- rep(0, mc.sample)
     for(i in 1:mc.sample){
@@ -333,6 +329,7 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, p
   if(cost[1] >= cost[2]) stop("If the cost for high-fidelity is cheaper, just acquire the high-fidelity")
   if(is.null(Xref)) Xref <- randomLHS(dim(fit$fit1$X)[1], dim(fit$fit1$X)[2])
   if(missing(n.start)) n.start <- 10 * dim(fit$fit1$X)[2]
+  if(parallel) registerDoParallel(ncore) 
   
   Icurrent <- mean(predRNAmf(fit, Xref)$sig2)
 
@@ -362,7 +359,6 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, p
   cat("running starting points: \n")
   time.start <- proc.time()[3]
   if(parallel){
-    registerDoParallel(ncore)
     pseudointvar <- foreach(i = 1:nrow(Xcand), .combine=cbind) %dopar% {
       newx <- matrix(Xcand[i,], nrow=1)
       
@@ -371,7 +367,6 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, p
     }
     intvar1 <- pseudointvar[,1]
     intvar2 <- pseudointvar[,2]
-    stopImplicitCluster()
   }else{
     intvar1 <- c(rep(0, nrow(Xcand))) # IMSPE candidates
     intvar2 <- c(rep(0, nrow(Xcand))) # IMSPE candidates
@@ -446,7 +441,8 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, p
   }
 
   fit <- RNAmf(X1, y1, X2, y2, kernel=kernel, constant=constant)
-
+  
+  if(parallel)  stopImplicitCluster()
 
   return(list(fit=fit, intvar1=intvar1, intvar2=intvar2, cost=cost, Xcand=Xcand, chosen=chosen))
 }
