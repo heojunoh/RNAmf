@@ -13,7 +13,7 @@
 #' @export
 #'
 
-obj.ALC_two_level_1 <- function(Xcand, Xref, y1.sample, fit){
+obj.ALC_two_level_1 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, ncore=1){
 
   fit1 <- f1 <- fit$fit1
   fit2 <- f2 <- fit$fit2
@@ -30,6 +30,14 @@ obj.ALC_two_level_1 <- function(Xcand, Xref, y1.sample, fit){
   y.center2 <- attr(fit2$y, "scaled:center")
 
   Xcand <- matrix(Xcand, nrow=1)
+  if(kernel=="sqex"){
+    y1.sample <- rnorm(mc.sample, mean=pred.GP(f1, Xcand)$mu, sd=sqrt(pred.GP(f1, Xcand)$sig2))
+  }else if(kernel=="matern1.5"){
+    y1.sample <- rnorm(mc.sample, mean=pred.matGP(f1, Xcand)$mu, sd=sqrt(pred.matGP(f1, Xcand)$sig2))
+  }else if(kernel=="matern2.5"){
+    y1.sample <- rnorm(mc.sample, mean=pred.matGP(f1, Xcand)$mu, sd=sqrt(pred.matGP(f1, Xcand)$sig2))
+  }
+  
   Xcand <- matrix((Xcand-x.center1)/x.scale1, nrow=1)
 
   ### Choose level 1 ###
@@ -55,18 +63,42 @@ obj.ALC_two_level_1 <- function(Xcand, Xref, y1.sample, fit){
   attr(fit1$X, "scaled:center") <- x.center1
   attr(fit1$X, "scaled:scale") <- x.scale1
 
-  if(constant){
-    fit1$y <- c(f1$y, y1.sample)
+  
+  ALC.out <- rep(0, mc.sample)
+  if(parallel){
+    registerDoParallel(ncore)
+    ALC.out <- foreach(i = 1:mc.sample, .combine=c) %dopar% {
+      fit.tmp <- fit
+      if(constant){
+        fit1$y <- c(f1$y, y1.sample[i])
+      }else{
+        fit1$y <- c(f1$y, y1.sample[i]-y.center1)
+        attr(fit1$y, "scaled:center") <- y.center1
+      }
+      fit1$tau2hat <- drop(t(fit1$y - fit1$mu.hat) %*% fit1$Ki %*% (fit1$y - fit1$mu.hat) / length(fit1$y))
+      
+      fit.tmp$fit1 <- fit1
+      
+      return(mean(predRNAmf(fit.tmp, Xref)$sig2)) # to minimize the deduced variance. To maximize, -mean
+    }
+    stopImplicitCluster()
   }else{
-    fit1$y <- c(f1$y, y1.sample-y.center1)
-    attr(fit1$y, "scaled:center") <- y.center1
+    for(i in 1:mc.sample){
+      fit.tmp <- fit
+      if(constant){
+        fit1$y <- c(f1$y, y1.sample[i])
+      }else{
+        fit1$y <- c(f1$y, y1.sample[i]-y.center1)
+        attr(fit1$y, "scaled:center") <- y.center1
+      }
+      fit1$tau2hat <- drop(t(fit1$y - fit1$mu.hat) %*% fit1$Ki %*% (fit1$y - fit1$mu.hat) / length(fit1$y))
+      
+      fit.tmp$fit1 <- fit1
+      
+      ALC.out[i] <- mean(predRNAmf(fit.tmp, Xref)$sig2) # to minimize the deduced variance. To maximize, -mean
+    }
   }
-
-  fit1$tau2hat <- drop(t(fit1$y - fit1$mu.hat) %*% fit1$Ki %*% (fit1$y - fit1$mu.hat) / length(fit1$y))
-
-  fit$fit1 <- fit1
-
-  mean(predRNAmf(fit, Xref)$sig2) # to minimize the deduced variance. To maximize, -mean
+  return(mean(ALC.out))
 }
 
 
@@ -85,7 +117,7 @@ obj.ALC_two_level_1 <- function(Xcand, Xref, y1.sample, fit){
 #' @export
 #'
 
-obj.ALC_two_level_2 <- function(Xcand, Xref, y1.sample, fit){
+obj.ALC_two_level_2 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, ncore=1){
 
   fit1 <- f1 <- fit$fit1
   fit2 <- f2 <- fit$fit2
@@ -102,6 +134,13 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, y1.sample, fit){
   y.center2 <- attr(fit2$y, "scaled:center")
 
   Xcand <- matrix(Xcand, nrow=1)
+  if(kernel=="sqex"){
+    y1.sample <- rnorm(mc.sample, mean=pred.GP(f1, Xcand)$mu, sd=sqrt(pred.GP(f1, Xcand)$sig2))
+  }else if(kernel=="matern1.5"){
+    y1.sample <- rnorm(mc.sample, mean=pred.matGP(f1, Xcand)$mu, sd=sqrt(pred.matGP(f1, Xcand)$sig2))
+  }else if(kernel=="matern2.5"){
+    y1.sample <- rnorm(mc.sample, mean=pred.matGP(f1, Xcand)$mu, sd=sqrt(pred.matGP(f1, Xcand)$sig2))
+  }
   Xcand <- matrix((Xcand-x.center1)/x.scale1, nrow=1)
 
   ### Choose level 1 ###
@@ -127,65 +166,136 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, y1.sample, fit){
   attr(fit1$X, "scaled:center") <- x.center1
   attr(fit1$X, "scaled:scale") <- x.scale1
 
-  if(constant){
-    fit1$y <- c(f1$y, y1.sample)
+  if(parallel){
+    registerDoParallel(ncore)
+    ALC.out <- foreach(i = 1:mc.sample, .combine=c) %dopar% {
+      fit.tmp <- fit
+      if(constant){
+        fit1$y <- c(f1$y, y1.sample[i])
+      }else{
+        fit1$y <- c(f1$y, y1.sample[i]-y.center1)
+        attr(fit1$y, "scaled:center") <- y.center1
+      }
+      
+      fit1$tau2hat <- drop(t(fit1$y - fit1$mu.hat) %*% fit1$Ki %*% (fit1$y - fit1$mu.hat) / length(fit1$y))
+      
+      fit.tmp$fit1 <- fit1
+      
+      ### Choose level 2 ###
+      if(kernel=="sqex"){
+        pred2 <- pred.GP(fit2, cbind(Xcand, y1.sample[i]))
+        y2.sample <- rnorm(1, pred2$mu, sqrt(pred2$sig2))
+      }else if(kernel=="matern1.5"){
+        pred2 <- pred.matGP(fit2, cbind(Xcand, y1.sample[i]))
+        y2.sample <- rnorm(1, pred2$mu, sqrt(pred2$sig2))
+      }else if(kernel=="matern2.5"){
+        pred2 <- pred.matGP(fit2, cbind(Xcand, y1.sample[i]))
+        y2.sample <- rnorm(1, pred2$mu, sqrt(pred2$sig2))
+      }
+      
+      ### update Ki2
+      newx2 <- t((t(cbind(Xcand, y1.sample[i]))-x.center2)/x.scale2)
+      
+      if(kernel=="sqex"){
+        cov.newx2 <- covar.sep(X1=newx2, d=f2$theta, g=g)
+        cov.Xnewx2 <- covar.sep(X1=f2$X, X2=newx2, d=f2$theta, g=0)
+      }else if(kernel=="matern1.5"){
+        cov.newx2 <- cor.sep(X=newx2, theta=f2$theta, nu=1.5)
+        cov.Xnewx2 <- cor.sep(X=f2$X, x=newx2, theta=f2$theta, nu=1.5)
+      }else if(kernel=="matern2.5"){
+        cov.newx2 <- cor.sep(X=newx2, theta=f2$theta, nu=2.5)
+        cov.Xnewx2 <- cor.sep(X=f2$X, x=newx2, theta=f2$theta, nu=2.5)
+      }
+      v.next2 <- drop(cov.newx2 - t(cov.Xnewx2) %*% f2$Ki %*% cov.Xnewx2)
+      g.next2 <- - 1/drop(v.next2) * f2$Ki %*% cov.Xnewx2
+      
+      fit2$Ki <- rbind(cbind(f2$Ki+g.next2%*%t(g.next2)*v.next2, g.next2),
+                       cbind(t(g.next2), 1/drop(v.next2)))
+      
+      fit2$X <- rbind(f2$X, newx2)
+      attr(fit2$X, "scaled:center") <- x.center2
+      attr(fit2$X, "scaled:scale") <- x.scale2
+      
+      if(constant){
+        fit2$y <- c(f2$y, y2.sample)
+      }else{
+        fit2$y <- c(f2$y, y2.sample-y.center2)
+        attr(fit2$y, "scaled:center") <- y.center2
+      }
+      
+      fit2$tau2hat <- drop(t(fit2$y - fit2$mu.hat) %*% fit2$Ki %*% (fit2$y - fit2$mu.hat) / length(fit2$y))
+      
+      fit.tmp$fit2 <- fit2
+      
+      return(mean(predRNAmf(fit.tmp, Xref)$sig2)) # to minimize the deduced variance. To maximize, -mean
+    }
+    stopImplicitCluster()
   }else{
-    fit1$y <- c(f1$y, y1.sample-y.center1)
-    attr(fit1$y, "scaled:center") <- y.center1
+    ALC.out <- rep(0, mc.sample)
+    for(i in 1:mc.sample){
+      fit.tmp <- fit
+      if(constant){
+        fit1$y <- c(f1$y, y1.sample[i])
+      }else{
+        fit1$y <- c(f1$y, y1.sample[i]-y.center1)
+        attr(fit1$y, "scaled:center") <- y.center1
+      }
+      
+      fit1$tau2hat <- drop(t(fit1$y - fit1$mu.hat) %*% fit1$Ki %*% (fit1$y - fit1$mu.hat) / length(fit1$y))
+      
+      fit.tmp$fit1 <- fit1
+      
+      ### Choose level 2 ###
+      if(kernel=="sqex"){
+        pred2 <- pred.GP(fit2, cbind(Xcand, y1.sample[i]))
+        y2.sample <- rnorm(1, pred2$mu, sqrt(pred2$sig2))
+      }else if(kernel=="matern1.5"){
+        pred2 <- pred.matGP(fit2, cbind(Xcand, y1.sample[i]))
+        y2.sample <- rnorm(1, pred2$mu, sqrt(pred2$sig2))
+      }else if(kernel=="matern2.5"){
+        pred2 <- pred.matGP(fit2, cbind(Xcand, y1.sample[i]))
+        y2.sample <- rnorm(1, pred2$mu, sqrt(pred2$sig2))
+      }
+      
+      ### update Ki2
+      newx2 <- t((t(cbind(Xcand, y1.sample[i]))-x.center2)/x.scale2)
+      
+      if(kernel=="sqex"){
+        cov.newx2 <- covar.sep(X1=newx2, d=f2$theta, g=g)
+        cov.Xnewx2 <- covar.sep(X1=f2$X, X2=newx2, d=f2$theta, g=0)
+      }else if(kernel=="matern1.5"){
+        cov.newx2 <- cor.sep(X=newx2, theta=f2$theta, nu=1.5)
+        cov.Xnewx2 <- cor.sep(X=f2$X, x=newx2, theta=f2$theta, nu=1.5)
+      }else if(kernel=="matern2.5"){
+        cov.newx2 <- cor.sep(X=newx2, theta=f2$theta, nu=2.5)
+        cov.Xnewx2 <- cor.sep(X=f2$X, x=newx2, theta=f2$theta, nu=2.5)
+      }
+      v.next2 <- drop(cov.newx2 - t(cov.Xnewx2) %*% f2$Ki %*% cov.Xnewx2)
+      g.next2 <- - 1/drop(v.next2) * f2$Ki %*% cov.Xnewx2
+      
+      fit2$Ki <- rbind(cbind(f2$Ki+g.next2%*%t(g.next2)*v.next2, g.next2),
+                       cbind(t(g.next2), 1/drop(v.next2)))
+      
+      fit2$X <- rbind(f2$X, newx2)
+      attr(fit2$X, "scaled:center") <- x.center2
+      attr(fit2$X, "scaled:scale") <- x.scale2
+      
+      if(constant){
+        fit2$y <- c(f2$y, y2.sample)
+      }else{
+        fit2$y <- c(f2$y, y2.sample-y.center2)
+        attr(fit2$y, "scaled:center") <- y.center2
+      }
+      
+      fit2$tau2hat <- drop(t(fit2$y - fit2$mu.hat) %*% fit2$Ki %*% (fit2$y - fit2$mu.hat) / length(fit2$y))
+      
+      fit.tmp$fit2 <- fit2
+      
+      ALC.out[i] <- mean(predRNAmf(fit.tmp, Xref)$sig2) # to minimize the deduced variance. To maximize, -mean
+    }
   }
-
-  fit1$tau2hat <- drop(t(fit1$y - fit1$mu.hat) %*% fit1$Ki %*% (fit1$y - fit1$mu.hat) / length(fit1$y))
-
-  fit$fit1 <- fit1
-
-
-  ### Choose level 2 ###
-  if(kernel=="sqex"){
-    pred2 <- pred.GP(fit2, cbind(Xcand, y1.sample))
-    y2.sample <- rnorm(1, pred2$mu, sqrt(pred2$sig2))
-  }else if(kernel=="matern1.5"){
-    pred2 <- pred.matGP(fit2, cbind(Xcand, y1.sample))
-    y2.sample <- rnorm(1, pred2$mu, sqrt(pred2$sig2))
-  }else if(kernel=="matern2.5"){
-    pred2 <- pred.matGP(fit2, cbind(Xcand, y1.sample))
-    y2.sample <- rnorm(1, pred2$mu, sqrt(pred2$sig2))
-  }
-
-  ### update Ki2
-  newx2 <- t((t(cbind(Xcand, y1.sample))-x.center2)/x.scale2)
-
-  if(kernel=="sqex"){
-    cov.newx2 <- covar.sep(X1=newx2, d=f2$theta, g=g)
-    cov.Xnewx2 <- covar.sep(X1=f2$X, X2=newx2, d=f2$theta, g=0)
-  }else if(kernel=="matern1.5"){
-    cov.newx2 <- cor.sep(X=newx2, theta=f2$theta, nu=1.5)
-    cov.Xnewx2 <- cor.sep(X=f2$X, x=newx2, theta=f2$theta, nu=1.5)
-  }else if(kernel=="matern2.5"){
-    cov.newx2 <- cor.sep(X=newx2, theta=f2$theta, nu=2.5)
-    cov.Xnewx2 <- cor.sep(X=f2$X, x=newx2, theta=f2$theta, nu=2.5)
-  }
-  v.next2 <- drop(cov.newx2 - t(cov.Xnewx2) %*% f2$Ki %*% cov.Xnewx2)
-  g.next2 <- - 1/drop(v.next2) * f2$Ki %*% cov.Xnewx2
-
-  fit2$Ki <- rbind(cbind(f2$Ki+g.next2%*%t(g.next2)*v.next2, g.next2),
-                   cbind(t(g.next2), 1/drop(v.next2)))
-
-  fit2$X <- rbind(f2$X, newx2)
-  attr(fit2$X, "scaled:center") <- x.center2
-  attr(fit2$X, "scaled:scale") <- x.scale2
-
-  if(constant){
-    fit2$y <- c(f2$y, y2.sample)
-  }else{
-    fit2$y <- c(f2$y, y2.sample-y.center2)
-    attr(fit2$y, "scaled:center") <- y.center2
-  }
-
-  fit2$tau2hat <- drop(t(fit2$y - fit2$mu.hat) %*% fit2$Ki %*% (fit2$y - fit2$mu.hat) / length(fit2$y))
-
-  fit$fit2 <- fit2
-
-  mean(predRNAmf(fit, Xref)$sig2) # to minimize the deduced variance. To maximize, -mean
+  
+  return(mean(ALC.out))
 }
 
 #' ALC_two_level
@@ -217,14 +327,13 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, y1.sample, fit){
 #' @export
 #'
 
-ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, ncore=1){
+ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, parallel=TRUE, ncore=1){
 
   if(length(cost)!=2) stop("The length of cost should be 2")
   if(cost[1] >= cost[2]) stop("If the cost for high-fidelity is cheaper, just acquire the high-fidelity")
   if(is.null(Xref)) Xref <- randomLHS(dim(fit$fit1$X)[1], dim(fit$fit1$X)[2])
-
-  # registerDoParallel(ncore)
-
+  if(missing(n.start)) n.start <- 10 * dim(fit$fit1$X)[2]
+  
   Icurrent <- mean(predRNAmf(fit, Xref)$sig2)
 
   fit1 <- f1 <- fit$fit1
@@ -241,58 +350,62 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, ncore=1){
   x.scale2 <- attr(fit2$X, "scaled:scale")
   y.center2 <- attr(fit2$y, "scaled:center")
 
-  if(ncol(fit1$X)==1){ # Xcand
-    Xcand <- maximin.1d(Xorig=t(t(fit1$X) * x.scale1 + x.center1))
+  # if(ncol(fit1$X)==1){ # Xcand
+  #   Xcand <- maximin.1d(Xorig=t(t(fit1$X) * x.scale1 + x.center1))
+  # }else{
+  #   Xcand <- maximin.multid(Xorig=t(t(fit1$X) * x.scale1 + x.center1))
+  # }
+  
+  Xcand <- maximinLHS(n.start, ncol(fit1$X))
+  Xcand <- t(t(Xcand) * x.scale1 + x.center1)
+
+  cat("running starting points: \n")
+  time.start <- proc.time()[3]
+  if(parallel){
+    registerDoParallel(ncore)
+    pseudointvar <- foreach(i = 1:nrow(Xcand), .combine=cbind) %dopar% {
+      newx <- matrix(Xcand[i,], nrow=1)
+      
+      return(c(obj.ALC_two_level_1(newx, Xref, fit, mc.sample),
+               obj.ALC_two_level_2(newx, Xref, fit, mc.sample))) 
+    }
+    intvar1 <- pseudointvar[,1]
+    intvar2 <- pseudointvar[,2]
+    stopImplicitCluster()
   }else{
-    Xcand <- maximin.multid(Xorig=t(t(fit1$X) * x.scale1 + x.center1))
-  }
-
-  intvar1 <- c(rep(0, nrow(Xcand))) # IMSPE candidates
-  intvar2 <- c(rep(0, nrow(Xcand))) # IMSPE candidates
-
-  for(i in 1:nrow(Xcand)){
-    print(paste(i, nrow(Xcand), sep="/"))
-    newx <- matrix(Xcand[i,], nrow=1)
-
-    if(kernel=="sqex"){
-      x1.sample <- rnorm(mc.sample, mean=pred.GP(f1, newx)$mu, sd=sqrt(pred.GP(f1, newx)$sig2))
-    }else if(kernel=="matern1.5"){
-      x1.sample <- rnorm(mc.sample, mean=pred.matGP(f1, newx)$mu, sd=sqrt(pred.matGP(f1, newx)$sig2))
-    }else if(kernel=="matern2.5"){
-      x1.sample <- rnorm(mc.sample, mean=pred.matGP(f1, newx)$mu, sd=sqrt(pred.matGP(f1, newx)$sig2))
+    intvar1 <- c(rep(0, nrow(Xcand))) # IMSPE candidates
+    intvar2 <- c(rep(0, nrow(Xcand))) # IMSPE candidates
+    for(i in 1:nrow(Xcand)){
+      print(paste(i, nrow(Xcand), sep="/"))
+      newx <- matrix(Xcand[i,], nrow=1)
+      
+      intvar1[i] <- obj.ALC_two_level_1(newx, Xref, fit, mc.sample)
+      intvar2[i] <- obj.ALC_two_level_2(newx, Xref, fit, mc.sample)
     }
-
-    ### MC ###
-    pseudointvar <- foreach(j = 1:mc.sample, .combine=rbind) %dopar% {
-      # print(j)
-      ### Optimize at level 1 ###
-      # out1 <- optim(newx, obj.ALC_two_level_1, method="L-BFGS-B", lower=0, upper=1, fit=fit, Xref=Xref, y1.sample=x1.sample[j])
-      out1 <- obj.ALC_two_level_1(newx, Xref, x1.sample[j], fit)
-      ### Optimize at level 2 ###
-      # out2 <- optim(newx, obj.ALC_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit, Xref=Xref, y1.sample=x1.sample[j])
-      out2 <- obj.ALC_two_level_2(newx, Xref, x1.sample[j], fit)
-
-      return(c(out1, out2))
-    }
-
-    intvar1[i] <- mean(pseudointvar[,1])
-    intvar2[i] <- mean(pseudointvar[,2])
   }
-
-
+  print(proc.time()[3]- time.start)
+  
   ### Find the next point ###
-  ALCvalue <- c(Icurrent - intvar1[which.min(intvar1)], Icurrent - intvar2[which.min(intvar2)])/c(cost[1], cost[1]+cost[2])
-
-  if(which.max(ALCvalue)==1){
-    Xnext <- matrix(Xcand[which.min(intvar1),], nrow=1)
-    # location <- optim(newx, obj.ALC_two_level_1, method="L-BFGS-B", lower=0, upper=1, fit=fit, Xref=Xref, y1.sample=mean(x1.sample))$par
-  }else if(which.max(ALCvalue)==2){
-    Xnext <- matrix(Xcand[which.min(intvar2),], nrow=1)
-    # location <- optim(newx, obj.ALC_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit, Xref=Xref, y1.sample=mean(x1.sample))$par
-  }
-
+  cat("running optim for level 1: \n")
+  time.start <- proc.time()[3]
+  X.start <- matrix(Xcand[which.min(intvar1),], nrow=1)
+  optim.out <- optim(X.start, obj.ALC_two_level_1, method="L-BFGS-B", lower=0, upper=1, fit=fit, Xref=Xref, mc.sample=mc.sample, parallel=parallel, ncore=ncore)
+  Xnext.1 <- optim.out$par
+  ALC.1 <- optim.out$value
+  print(proc.time()[3]- time.start)
+  
+  cat("running optim for level 2: \n")
+  time.start <- proc.time()[3]
+  X.start <- matrix(Xcand[which.min(intvar2),], nrow=1)
+  optim.out <- optim(X.start, obj.ALC_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit, Xref=Xref, mc.sample=mc.sample)
+  Xnext.2 <- optim.out$par
+  ALC.2 <- optim.out$value
+  print(proc.time()[3]- time.start)
+  
+  ALCvalue <- c(Icurrent - ALC.1, Icurrent - ALC.2)/c(cost[1], cost[1]+cost[2])
+  Xnext <- c(Xnext.1, Xnext.2)[which.max(ALCvalue)]
+ 
   chosen <- list("level"=which.max(ALCvalue), # next level
-                 "location"=c(which.min(intvar1), which.min(intvar2))[which.max(ALCvalue)], # next location
                  "Xnext"=Xnext) # next point
 
 
