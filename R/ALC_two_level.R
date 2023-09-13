@@ -393,7 +393,7 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, p
   cat("running optim for level 2: \n")
   time.start <- proc.time()[3]
   X.start <- matrix(Xcand[which.min(intvar2),], nrow=1)
-  optim.out <- optim(X.start, obj.ALC_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit, Xref=Xref, mc.sample=mc.sample)
+  optim.out <- optim(X.start, obj.ALC_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit, Xref=Xref, mc.sample=mc.sample, parallel=parallel, ncore=ncore)
   Xnext.2 <- optim.out$par
   ALC.2 <- optim.out$value
   print(proc.time()[3]- time.start)
