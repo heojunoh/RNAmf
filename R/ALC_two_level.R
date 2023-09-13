@@ -360,7 +360,7 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, p
   cat("running starting points: \n")
   time.start <- proc.time()[3]
   if(parallel){
-    pseudointvar <- foreach(i = 1:nrow(Xcand), .combine=rbind) %dopar% {
+    pseudointvar <- foreach(i = 1:nrow(Xcand), .combine=cbind) %dopar% {
       newx <- matrix(Xcand[i,], nrow=1)
 
       return(c(obj.ALC_two_level_1(newx, Xref, fit, mc.sample),
