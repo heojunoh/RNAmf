@@ -68,21 +68,10 @@ GP <- function(X, y, g=sqrt(.Machine$double.eps),
     # lower <- min(sort(distance(X))[sort(distance(X))!=0])
     # upper <- max(sort(distance(X))[sort(distance(X))!=0])
 
-    # # hetGP way
-    # XX <- (X - matrix(apply(X, 2, range)[1,], nrow = nrow(X), ncol = ncol(X), byrow = TRUE)) %*% diag(1/(apply(X, 2, range)[2,] - apply(X, 2, range)[1,]), ncol(X))
-    # lower <- 10*- quantile(distance(XX)[lower.tri(distance(XX))], 0.05)/log(0.01) * (apply(XX, 2, range)[2,] - apply(XX, 2, range)[1,])^2
-    # upper <- 10*- quantile(distance(XX)[lower.tri(distance(XX))], 0.95)/log(0.5) * (apply(XX, 2, range)[2,] - apply(XX, 2, range)[1,])^2
-    # init <- sqrt(lower*upper)
-
-    # hetGP way
+    # hetGP way * 10^(d*2/3)
     XX <- (X - matrix(apply(X, 2, range)[1,], nrow = nrow(X), ncol = ncol(X), byrow = TRUE)) %*% diag(1/(apply(X, 2, range)[2,] - apply(X, 2, range)[1,]), ncol(X))
-    if((range(y)[2]-range(y)[1]) < 10){
-      lower <- 10*apply(XX, 2, parbound)[1,]
-      upper <- 10*apply(XX, 2, parbound)[2,]
-    }else{
-      lower <- 10000*apply(XX, 2, parbound)[1,]
-      upper <- 10000*apply(XX, 2, parbound)[2,]
-    }
+    lower <- max(10^(ncol(XX)*2/3)*apply(XX, 2, parbound)[1,], 0.2)
+    upper <- 10^(ncol(XX)*2/3)*apply(XX, 2, parbound)[2,]
     init <- sqrt(lower*upper)
 
     # # hetGP way
