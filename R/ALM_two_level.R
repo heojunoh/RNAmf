@@ -23,7 +23,7 @@ obj.ALM_two_level_1 <- function(Xcand, fit){
     predsig2 <- pred.matGP(fit1, newx)$sig2
   }
 
-  -predsig2 # to maximize the current variance.
+  predsig2 # to maximize the current variance.
 }
 
 
@@ -39,7 +39,7 @@ obj.ALM_two_level_1 <- function(Xcand, fit){
 
 obj.ALM_two_level_2 <- function(Xcand, fit){
   newx <- matrix(Xcand, nrow=1)
-  -predRNAmf(fit, newx)$sig2 # to maximize the current variance.
+  predRNAmf(fit, newx)$sig2 # to maximize the current variance.
 }
 
 
@@ -50,6 +50,7 @@ obj.ALM_two_level_2 <- function(Xcand, fit){
 #' @param fit an object of class RNAmf.
 #' @param cost a vector of the costs for each level of fidelity.
 #' @param funcs list of functions for each level of fidelity.
+#' @param ncore the number of core for parallel.
 #' @return A list containing the integrated one-step ahead variance:
 #' \itemize{
 #'   \item \code{fit}: fitted model after acquire chosen point.
@@ -67,12 +68,12 @@ obj.ALM_two_level_2 <- function(Xcand, fit){
 #' @export
 #'
 
-ALM_two_level <- function(fit, cost, funcs){
+ALM_two_level <- function(fit, cost, funcs, ncore=1){
 
   if (length(cost)!=2) stop("The length of cost should be 2")
   if (cost[1] >= cost[2]) stop("If the cost for high-fidelity is cheaper, just acquire the high-fidelity")
 
-  registerDoParallel(5)
+  # registerDoParallel(ncore)
 
   fit1 <- fit$fit1
   fit2 <- fit$fit2
@@ -91,19 +92,18 @@ ALM_two_level <- function(fit, cost, funcs){
   if(ncol(fit1$X)==1){ # Xcand
     Xcand <- maximin.1d(Xorig=t(t(fit1$X) * x.scale1 + x.center1))
   }else{
-    Xcand <- maximin(nrow(fit1$X), ncol(fit1$X), T=10*nrow(fit1$X),
-                     Xorig=t(t(fit1$X) * x.scale1 + x.center1))$Xf
+    Xcand <- maximin.multid(Xorig=t(t(fit1$X) * x.scale1 + x.center1))
   }
 
   ### Optimize at level 1 ###
   optm.mat <- foreach(i = 1:nrow(Xcand), .combine=rbind) %dopar% {
 
     ### Optimize at level 1 ###
-    out1 <- optim(Xcand[i,], obj.ALM_two_level_1, method="L-BFGS-B", lower=0, upper=1, fit=fit)
+    out1 <- obj.ALM_two_level_1(Xcand[i,], fit=fit)
     ### Optimize at level 2 ###
-    out2 <- optim(Xcand[i,], obj.ALM_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit)
+    out2 <- obj.ALM_two_level_2(Xcand[i,], fit=fit)
 
-    return(-c(out1$val, out2$val))
+    return(c(out1, out2))
   }
 
 
@@ -111,21 +111,22 @@ ALM_two_level <- function(fit, cost, funcs){
   ALMvalue <- c(optm.mat[,1][which.max(optm.mat[,1])], optm.mat[,2][which.max(optm.mat[,2])])/c(cost[1], cost[1]+cost[2])
 
   if(which.max(ALMvalue)==1){
-    newx <- matrix(Xcand[which.max(optm.mat[,1]),], nrow=1)
-    location <- optim(newx, obj.ALM_two_level_1, method="L-BFGS-B", lower=0, upper=1, fit=fit)$par
+    Xnext <- matrix(Xcand[which.max(optm.mat[,1]),], nrow=1)
+    # location <- optim(newx, obj.ALM_two_level_1, method="L-BFGS-B", lower=0, upper=1, fit=fit)$par
   }else if(which.max(ALMvalue)==2){
-    newx <- matrix(Xcand[which.max(optm.mat[,2]),], nrow=1)
-    location <- optim(newx, obj.ALM_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit)$par
+    Xnext <- matrix(Xcand[which.max(optm.mat[,2]),], nrow=1)
+    # location <- optim(newx, obj.ALM_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit)$par
   }
 
   chosen <- list("level"=which.max(ALMvalue), # next level
                  "location"=which.max(optm.mat[,which.max(ALMvalue)]), # next location
-                 "Xnext"=location) # next point
-  names(chosen$level) <- names(chosen$location) <- NULL
+                 "Xnext"=Xnext) # next point
+  # names(chosen$level) <- names(chosen$location) <- NULL
 
 
   ### Update the model ###
   newx <- matrix(chosen$Xnext, nrow=1)
+  # if(newx[1,1]==0) newx[1,1] <- sqrt(.Machine$double.eps) # To prevent yielding infinity for Park function
   level <- chosen$level
 
   X1 <- t(t(fit1$X)*attr(fit1$X,"scaled:scale")+attr(fit1$X,"scaled:center"))
