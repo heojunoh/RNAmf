@@ -4,19 +4,23 @@
 \alias{obj.ALC_two_level_2}
 \title{obj.ALC_two_level_2}
 \usage{
-obj.ALC_two_level_2(Xcand, Xref, y1.sample, fit)
+obj.ALC_two_level_2(Xcand, Xref, fit, mc.sample, parallel = FALSE, ncore = 1)
 }
 \arguments{
 \item{Xcand}{candidate data point to be optimized.}
 
 \item{Xref}{vector or matrix of reference data.}
 
-\item{y1.sample}{a scalar that replaces y1.}
-
 \item{fit}{an object of class RNAmf.}
+
+\item{mc.sample}{a number of mc samples generated for this approach. Default is 100.}
+
+\item{parallel}{logical indicating whether to run parallel or not. Default is FALSE.}
+
+\item{ncore}{the number of core for parallel. Default is 1.}
 }
 \value{
-A mean of the predictive posterior variance at Xref.
+A mean of the deduced variance at Xref.
 }
 \description{
 object to optimize the next point by ALC criterion updating at level 2 with two levels of fidelity

@@ -4,7 +4,7 @@
 \alias{ALM_two_level}
 \title{ALM_two_level_optm}
 \usage{
-ALM_two_level(fit, cost, funcs)
+ALM_two_level(fit, cost, funcs, n.start, parallel = FALSE, ncore = 1)
 }
 \arguments{
 \item{fit}{an object of class RNAmf.}
@@ -12,6 +12,12 @@ ALM_two_level(fit, cost, funcs)
 \item{cost}{a vector of the costs for each level of fidelity.}
 
 \item{funcs}{list of functions for each level of fidelity.}
+
+\item{n.start}{a number of candidate point. Default is 10*d.}
+
+\item{parallel}{logical indicating whether to run parallel or not. Default is FALSE.}
+
+\item{ncore}{the number of core for parallel.}
 }
 \value{
 A list containing the integrated one-step ahead variance:

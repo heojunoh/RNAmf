@@ -4,7 +4,16 @@
 \alias{ALMC_two_level}
 \title{ALMC_two_level}
 \usage{
-ALMC_two_level(Xref, fit, mc.sample = 100, cost, funcs)
+ALMC_two_level(
+  Xref = NULL,
+  fit,
+  mc.sample = 100,
+  cost,
+  funcs,
+  n.start,
+  parallel = FALSE,
+  ncore = 1
+)
 }
 \arguments{
 \item{Xref}{vector or matrix of reference data.}
@@ -16,6 +25,12 @@ ALMC_two_level(Xref, fit, mc.sample = 100, cost, funcs)
 \item{cost}{a vector of the costs for each level of fidelity.}
 
 \item{funcs}{list of functions for each level of fidelity.}
+
+\item{n.start}{a number of candidate point. Default is 10*d.}
+
+\item{parallel}{logical indicating whether to run parallel or not. Default is FALSE.}
+
+\item{ncore}{the number of core for parallel. Default is 1.}
 }
 \value{
 A list containing the integrated one-step ahead variance:

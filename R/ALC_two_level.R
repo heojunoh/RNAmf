@@ -322,10 +322,11 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
 #' @importFrom plgp covar.sep
 #' @importFrom stats rnorm
 #' @importFrom lhs randomLHS
-#' @importFrom maximin maximin
+#' @importFrom lhs maximinLHS
 #' @importFrom foreach foreach
 #' @importFrom foreach %dopar%
 #' @importFrom doParallel registerDoParallel
+#' @importFrom doParallel stopImplicitCluster
 #' @export
 #'
 

@@ -63,10 +63,11 @@ obj.ALM_two_level_2 <- function(Xcand, fit){
 #'   \item \code{chosen}: list of chosen level, location, and point.
 #' }
 #' @importFrom plgp covar.sep
-#' @importFrom maximin maximin
+#' @importFrom lhs maximinLHS
 #' @importFrom foreach foreach
 #' @importFrom foreach %dopar%
 #' @importFrom doParallel registerDoParallel
+#' @importFrom doParallel stopImplicitCluster
 #' @export
 #'
 

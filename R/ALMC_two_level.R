@@ -22,10 +22,11 @@
 #' @importFrom plgp covar.sep
 #' @importFrom stats rnorm
 #' @importFrom lhs randomLHS
-#' @importFrom maximin maximin
+#' @importFrom lhs maximinLHS
 #' @importFrom foreach foreach
 #' @importFrom foreach %dopar%
 #' @importFrom doParallel registerDoParallel
+#' @importFrom doParallel stopImplicitCluster
 #' @export
 #'
 
@@ -134,5 +135,5 @@ ALMC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, 
 
   if(parallel)  stopImplicitCluster()
 
-  return(list(fit=fit, intvar1=intvar1, intvar2=intvar2, cost=cost, Xcand=Xcand, chosen=chosen))
+  return(list(fit=fit, cost=cost, Xcand=Xcand, chosen=chosen))
 }
