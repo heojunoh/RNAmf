@@ -329,7 +329,7 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
 #' @export
 #'
 
-ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, parallel=TRUE, ncore=1){
+ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, parallel=FALSE, ncore=1){
 
   if(length(cost)!=2) stop("The length of cost should be 2")
   if(cost[1] >= cost[2]) stop("If the cost for high-fidelity is cheaper, just acquire the high-fidelity")
