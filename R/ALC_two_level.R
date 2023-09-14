@@ -367,8 +367,8 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, p
       return(c(obj.ALC_two_level_1(newx, Xref, fit, mc.sample),
                obj.ALC_two_level_2(newx, Xref, fit, mc.sample)))
     }
-    intvar1 <- pseudointvar[,1]
-    intvar2 <- pseudointvar[,2]
+    intvar1 <- pseudointvar[1,]
+    intvar2 <- pseudointvar[2,]
   }else{
     intvar1 <- c(rep(0, nrow(Xcand))) # IMSPE candidates
     intvar2 <- c(rep(0, nrow(Xcand))) # IMSPE candidates

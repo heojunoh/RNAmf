@@ -110,8 +110,8 @@ ALM_two_level <- function(fit, cost, funcs, n.start, parallel=FALSE, ncore=1){
       print(paste(i, nrow(Xcand), sep="/"))
       newx <- matrix(Xcand[i,], nrow=1)
 
-      optm.mat[i,1] <- -obj.ALC_two_level_1(newx, fit=fit)
-      optm.mat[i,2] <- -obj.ALC_two_level_2(newx, fit=fit)
+      optm.mat[1,i] <- -obj.ALC_two_level_1(newx, fit=fit)
+      optm.mat[2,i] <- -obj.ALC_two_level_2(newx, fit=fit)
     }
   }
   print(proc.time()[3]- time.start)
@@ -119,7 +119,7 @@ ALM_two_level <- function(fit, cost, funcs, n.start, parallel=FALSE, ncore=1){
   ### Find the next point ###
   cat("running optim for level 1: \n")
   time.start <- proc.time()[3]
-  X.start <- matrix(Xcand[which.min(which.max(optm.mat[,1])),], nrow=1)
+  X.start <- matrix(Xcand[which.min(which.max(optm.mat[1,])),], nrow=1)
   optim.out <- optim(X.start, obj.ALM_two_level_1, method="L-BFGS-B", lower=0, upper=1, fit=fit)
   Xnext.1 <- optim.out$par
   ALM.1 <- -optim.out$value
@@ -127,7 +127,7 @@ ALM_two_level <- function(fit, cost, funcs, n.start, parallel=FALSE, ncore=1){
 
   cat("running optim for level 2: \n")
   time.start <- proc.time()[3]
-  X.start <- matrix(Xcand[which.min(which.max(optm.mat[,2])),], nrow=1)
+  X.start <- matrix(Xcand[which.min(which.max(optm.mat[2,])),], nrow=1)
   optim.out <- optim(X.start, obj.ALM_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit)
   Xnext.2 <- optim.out$par
   ALM.2 <- -optim.out$value

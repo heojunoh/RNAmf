@@ -76,12 +76,12 @@ ALMC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, 
       newx <- matrix(Xcand[i,], nrow=1)
       optim.ALM <- optim(newx, obj.ALM_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit)
 
-      optm.mat[i,] <- c(-optim.ALM$value, optim.ALM$par)
+      optm.mat[,i] <- c(-optim.ALM$value, optim.ALM$par)
     }
   }
   print(proc.time()[3]- time.start)
 
-  Xnext <- matrix(optm.mat[,-1][which.max(optm.mat[,1]),], nrow=1)
+  Xnext <- matrix(optm.mat[-1,][,which.max(optm.mat[1,])], nrow=1)
 
   ### Calculate the deduced variance ###
   cat("running optim for level 1: \n")
