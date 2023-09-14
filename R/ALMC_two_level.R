@@ -60,7 +60,7 @@ ALMC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, 
   predsig2 <- predRNAmf(fit, Xcand)$sig2
 
   ### Find the next point ###
-  cat("running starting points: \n")
+  cat("running optim: \n")
   time.start <- proc.time()[3]
   if(parallel){
     optm.mat <- foreach(i = 1:nrow(Xcand), .combine=cbind) %dopar% {
@@ -84,12 +84,12 @@ ALMC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, 
   Xnext <- matrix(optm.mat[-1,][,which.max(optm.mat[1,])], nrow=1)
 
   ### Calculate the deduced variance ###
-  cat("running optim for level 1: \n")
+  cat("calculating deduced variance for level 1: \n")
   time.start <- proc.time()[3]
   ALMC.1 <- obj.ALC_two_level_1(Xnext, Xref=Xref, fit=fit, mc.sample=mc.sample, parallel=parallel, ncore=ncore)
   print(proc.time()[3]- time.start)
 
-  cat("running optim for level 2: \n")
+  cat("calculating deduced variance for level 2: \n")
   time.start <- proc.time()[3]
   ALMC.2 <- obj.ALC_two_level_2(Xnext, Xref=Xref, fit=fit, mc.sample=mc.sample, parallel=parallel, ncore=ncore)
   print(proc.time()[3]- time.start)
