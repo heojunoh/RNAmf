@@ -81,7 +81,7 @@ ALMC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, 
   }
   print(proc.time()[3]- time.start)
 
-  Xnext <- matrix(optm.mat[-1,][,which.max(optm.mat[1,])], nrow=1)
+  Xnext <- matrix(optm.mat[-1, which.max(optm.mat[1,])], nrow=1)
 
   ### Calculate the deduced variance ###
   cat("calculating deduced variance for level 1: \n")
