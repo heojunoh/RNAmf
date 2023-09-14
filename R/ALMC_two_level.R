@@ -7,7 +7,9 @@
 #' @param mc.sample a number of mc samples generated for this approach. Default is 100.
 #' @param cost a vector of the costs for each level of fidelity.
 #' @param funcs list of functions for each level of fidelity.
-#' @param ncore the number of core for parallel.
+#' @param n.start a number of candidate point. Default is 10*d.
+#' @param parallel logical indicating whether to run parallel or not. Default is FALSE.
+#' @param ncore the number of core for parallel. Default is 1.
 #' @return A list containing the integrated one-step ahead variance:
 #' \itemize{
 #'   \item \code{fit}: fitted model after acquire chosen point.
@@ -27,13 +29,13 @@
 #' @export
 #'
 
-ALMC_two_level <- function(Xref, fit, mc.sample=100, cost, funcs, ncore=1){
+ALMC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, parallel=FALSE, ncore=1){
 
-  if (length(cost)!=2) stop("The length of cost should be 2")
-  if (cost[1] >= cost[2]) stop("If the cost for high-fidelity is cheaper, just acquire the high-fidelity")
+  if(length(cost)!=2) stop("The length of cost should be 2")
+  if(cost[1] >= cost[2]) stop("If the cost for high-fidelity is cheaper, just acquire the high-fidelity")
   if(is.null(Xref)) Xref <- randomLHS(dim(fit$fit1$X)[1], dim(fit$fit1$X)[2])
-
-  # registerDoParallel(ncore)
+  if(missing(n.start)) n.start <- 10 * dim(fit$fit1$X)[2]
+  if(parallel) registerDoParallel(ncore)
 
   Icurrent <- mean(predRNAmf(fit, Xref)$sig2)
 
@@ -51,54 +53,45 @@ ALMC_two_level <- function(Xref, fit, mc.sample=100, cost, funcs, ncore=1){
   x.scale2 <- attr(fit2$X, "scaled:scale")
   y.center2 <- attr(fit2$y, "scaled:center")
 
-  if(ncol(fit1$X)==1){ # Xcand
-    Xcand <- maximin.1d(Xorig=t(t(fit1$X) * x.scale1 + x.center1))
-  }else{
-    Xcand <- maximin.multid(Xorig=t(t(fit1$X) * x.scale1 + x.center1))
-  }
+  ### Generate the candidate set ###
+  Xcand <- maximinLHS(n.start, ncol(fit1$X))
+
   predsig2 <- predRNAmf(fit, Xcand)$sig2
-  intvar1 <- c(0) # IMSPE candidates
-  intvar2 <- c(0) # IMSPE candidates
 
+  ### x is fixed for ALMC ###
+  cat("running starting points: \n")
+  time.start <- proc.time()[3]
   newx <- matrix(Xcand[which.max(predsig2),], nrow=1)
+  print(proc.time()[3]- time.start)
 
-  if(kernel=="sqex"){
-    x1.sample <- rnorm(mc.sample, mean=pred.GP(f1, newx)$mu, sd=sqrt(pred.GP(f1, newx)$sig2))
-  }else if(kernel=="matern1.5"){
-    x1.sample <- rnorm(mc.sample, mean=pred.matGP(f1, newx)$mu, sd=sqrt(pred.matGP(f1, newx)$sig2))
-  }else if(kernel=="matern2.5"){
-    x1.sample <- rnorm(mc.sample, mean=pred.matGP(f1, newx)$mu, sd=sqrt(pred.matGP(f1, newx)$sig2))
+  ### Find the next point ###
+  cat("running optim for level 1: \n")
+  time.start <- proc.time()[3]
+  X.start <- newx
+  optim.out <- optim(X.start, obj.ALC_two_level_1, method="L-BFGS-B", lower=0, upper=1, fit=fit, Xref=Xref, mc.sample=mc.sample, parallel=parallel, ncore=ncore)
+  Xnext.1 <- optim.out$par
+  ALMC.1 <- optim.out$value
+  print(proc.time()[3]- time.start)
+
+  cat("running optim for level 2: \n")
+  time.start <- proc.time()[3]
+  X.start <- newx
+  optim.out <- optim(X.start, obj.ALC_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit, Xref=Xref, mc.sample=mc.sample, parallel=parallel, ncore=ncore)
+  Xnext.2 <- optim.out$par
+  ALMC.2 <- optim.out$value
+  print(proc.time()[3]- time.start)
+
+  ALMCvalue <- c(Icurrent - ALMC.1, Icurrent - ALMC.2)/c(cost[1], cost[1]+cost[2])
+  if(ALMCvalue[2] > ALMCvalue[1]){
+    level <- 2
+    Xnext <- Xnext.2
+  }else{
+    level <- 1
+    Xnext <- Xnext.1
   }
 
-  ### MC ###
-  pseudointvar <- foreach(j = 1:mc.sample, .combine=rbind) %dopar% {
-    # print(j)
-    ### Optimize at level 1 ###
-    # out1 <- optim(newx, obj.ALC_two_level_1, method="L-BFGS-B", lower=0, upper=1, fit=fit, Xref=Xref, y1.sample=x1.sample[j])
-    out1 <- obj.ALC_two_level_1(newx, Xref, x1.sample[j], fit)
-    ### Optimize at level 2 ###
-    # out2 <- optim(newx, obj.ALC_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit, Xref=Xref, y1.sample=x1.sample[j])
-    out2 <- obj.ALC_two_level_1(newx, Xref, x1.sample[j], fit)
-
-    return(c(out1, out2))
-  }
-
-  intvar1 <- mean(pseudointvar[,1])
-  intvar2 <- mean(pseudointvar[,2])
-
-
-  ### Select the next level and point ###
-  ALMCvalue <- c(Icurrent - intvar1, Icurrent - intvar2)/c(cost[1], cost[1]+cost[2])
-
-  # if(which.max(ALMCvalue)==1){
-  #   location <- optim(newx, obj.ALC_two_level_1, method="L-BFGS-B", lower=0, upper=1, fit=fit, Xref=Xref, y1.sample=mean(x1.sample))$par
-  # }else if(which.max(ALMCvalue)==2){
-  #   location <- optim(newx, obj.ALC_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit, Xref=Xref, y1.sample=mean(x1.sample))$par
-  # }
-
-  chosen <- list("level"=which.max(ALMCvalue), # next level
-                 "location"=which.max(predsig2), # next location
-                 "Xnext"=newx) # next point
+  chosen <- list("level"=level, # next level
+                 "Xnext"=Xnext) # next point
 
 
   ### Update the model ###
@@ -139,6 +132,7 @@ ALMC_two_level <- function(Xref, fit, mc.sample=100, cost, funcs, ncore=1){
 
   fit <- RNAmf(X1, y1, X2, y2, kernel=kernel, constant=constant)
 
+  if(parallel)  stopImplicitCluster()
 
   return(list(fit=fit, intvar1=intvar1, intvar2=intvar2, cost=cost, Xcand=Xcand, chosen=chosen))
 }
