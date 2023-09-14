@@ -62,33 +62,43 @@ ALMC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, 
   ### x is fixed for ALMC ###
   cat("running starting points: \n")
   time.start <- proc.time()[3]
-  newx <- matrix(Xcand[which.max(predsig2),], nrow=1)
+  if(parallel){
+    optm.mat <- foreach(i = 1:nrow(Xcand), .combine=cbind) %dopar% {
+      newx <- matrix(Xcand[i,], nrow=1)
+      optim.ALM <- optim(newx, obj.ALM_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit)
+
+      return(c(-optim.ALM$value, optim.ALM$par))
+    }
+  }else{
+    optm.mat <- cbind(c(rep(0, nrow(Xcand))), c(rep(0, nrow(Xcand))))
+    for(i in 1:nrow(Xcand)){
+      print(paste(i, nrow(Xcand), sep="/"))
+      newx <- matrix(Xcand[i,], nrow=1)
+      optim.ALM <- optim(newx, obj.ALM_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit)
+
+      optm.mat[i,] <- c(-optim.ALM$value, optim.ALM$par)
+    }
+  }
   print(proc.time()[3]- time.start)
+
+  Xnext <- matrix(optm.mat[,-1][which.max(optm.mat[,1]),], nrow=1)
 
   ### Find the next point ###
   cat("running optim for level 1: \n")
   time.start <- proc.time()[3]
-  X.start <- newx
-  optim.out <- optim(X.start, obj.ALC_two_level_1, method="L-BFGS-B", lower=0, upper=1, fit=fit, Xref=Xref, mc.sample=mc.sample, parallel=parallel, ncore=ncore)
-  Xnext.1 <- optim.out$par
-  ALMC.1 <- optim.out$value
+  ALMC.1 <- obj.ALC_two_level_1(Xnext, Xref=Xref, fit=fit, mc.sample=mc.sample, parallel=parallel, ncore=ncore)
   print(proc.time()[3]- time.start)
 
   cat("running optim for level 2: \n")
   time.start <- proc.time()[3]
-  X.start <- newx
-  optim.out <- optim(X.start, obj.ALC_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit, Xref=Xref, mc.sample=mc.sample, parallel=parallel, ncore=ncore)
-  Xnext.2 <- optim.out$par
-  ALMC.2 <- optim.out$value
+  ALMC.2 <- obj.ALC_two_level_2(Xnext, Xref=Xref, fit=fit, mc.sample=mc.sample, parallel=parallel, ncore=ncore)
   print(proc.time()[3]- time.start)
 
   ALMCvalue <- c(Icurrent - ALMC.1, Icurrent - ALMC.2)/c(cost[1], cost[1]+cost[2])
   if(ALMCvalue[2] > ALMCvalue[1]){
     level <- 2
-    Xnext <- Xnext.2
   }else{
     level <- 1
-    Xnext <- Xnext.1
   }
 
   chosen <- list("level"=level, # next level
