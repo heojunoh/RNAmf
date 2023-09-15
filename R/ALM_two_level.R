@@ -119,7 +119,7 @@ ALM_two_level <- function(fit, cost, funcs, n.start, parallel=FALSE, ncore=1){
   ### Find the next point ###
   cat("running optim for level 1: \n")
   time.start <- proc.time()[3]
-  X.start <- matrix(Xcand[which.min(which.max(optm.mat[1,])),], nrow=1)
+  X.start <- matrix(Xcand[which.max(optm.mat[1,]),], nrow=1)
   optim.out <- optim(X.start, obj.ALM_two_level_1, method="L-BFGS-B", lower=0, upper=1, fit=fit)
   Xnext.1 <- optim.out$par
   ALM.1 <- -optim.out$value
@@ -127,7 +127,7 @@ ALM_two_level <- function(fit, cost, funcs, n.start, parallel=FALSE, ncore=1){
 
   cat("running optim for level 2: \n")
   time.start <- proc.time()[3]
-  X.start <- matrix(Xcand[which.min(which.max(optm.mat[2,])),], nrow=1)
+  X.start <- matrix(Xcand[which.max(optm.mat[2,]),], nrow=1)
   optim.out <- optim(X.start, obj.ALM_two_level_2, method="L-BFGS-B", lower=0, upper=1, fit=fit)
   Xnext.2 <- optim.out$par
   ALM.2 <- -optim.out$value
@@ -186,5 +186,5 @@ ALM_two_level <- function(fit, cost, funcs, n.start, parallel=FALSE, ncore=1){
 
   if(parallel)  stopImplicitCluster()
 
-  return(list(fit=fit, predsig2.low=optm.mat[,1], predsig2=optm.mat[,2], cost=cost, Xcand=Xcand, chosen=chosen))
+  return(list(fit=fit, predsig2.low=optm.mat[1,], predsig2=optm.mat[2,], cost=cost, Xcand=Xcand, chosen=chosen))
 }
