@@ -1,3 +1,70 @@
+#' matern.kernel
+#'
+#' calculating matern kernel with corresponding smoothness parameter
+#'
+#'
+#' @param r vector or matrix of input.
+#' @param nu numerical value of smoothness hyperparameter. It should be 0.5, 1.5, 2.5, 3.5, or 4.5.
+#' @param derivative logical indicating for its first derivative(derivative=1)
+#' @noRd
+#' @keywords internal
+#' @return A value from matern kernel.
+
+matern.kernel <- function(r,nu,derivative=0){
+  if(nu==1/2){ #nu=0.5
+    if(derivative == 0) out <- exp(-r)
+    if(derivative == 1) out <- -exp(-r)
+  }else if(nu==3/2){ #nu=1.5
+    if(derivative == 0) out <- (1+r*sqrt(3)) * exp(-r*sqrt(3))
+    if(derivative == 1) out <- -3*r*exp(-sqrt(3)*r)
+  }else if(nu==5/2){ #nu=2.5
+    if(derivative == 0) out <- (1+r*sqrt(5)+5*r^2/3) * exp(-r*sqrt(5))
+    if(derivative == 1) out <- -(r*(5^(3/2)*r+5)*exp(-sqrt(5)*r))/3
+  }else if(nu==7/2){ #nu=3.5
+    if(derivative == 0) out <- (1+r*sqrt(7)+2.8*r^2+7/15*sqrt(7)*r^3) * exp(-r*sqrt(7))
+    if(derivative == 1) out <- -(r*(49*r^2+3*7^(3/2)*r+21)*exp(-sqrt(7)*r))/15
+  }else if(nu==9/2){ #nu=4.5
+    if(derivative == 0) out <- (1+r*sqrt(9)+27*r^2/7+18/7*r^3+27/35*r^4) * exp(-r*3)
+    if(derivative == 1) out <- -((81*r^4+162*r^3+135*r^2+45*r)*exp(-3*r))/35
+  }
+
+  return(out)
+}
+
+#' cor.sep
+#'
+#' calculating separable matern kernel
+#'
+#' @param X vector or matrix of input.
+#' @param x vector or matrix of new input. Default is NULL
+#' @param theta lengthscale parameter. It should have the length of ncol(X).
+#' @param nu numerical value of smoothness hyperparameter. It should be 0.5, 1.5, 2.5, 3.5, or 4.5.
+#' @param derivative logical indicating for its first derivative(derivative=1)
+#' @noRd
+#' @keywords internal
+#' @return A covariance matrix of matern kernel.
+
+cor.sep <- function(X, x=NULL, theta, nu, derivative=0){
+  d <- NCOL(X)
+  n <- NROW(X)
+  nu <- rep(nu, d)
+  if(is.null(x)){
+    K <- matrix(1, n, n)
+    for(i in 1:d){
+      R <- sqrt(distance(X[,i]/theta[i]))
+      K <- K * matern.kernel(R, nu=nu[i], derivative=derivative)
+    }
+  }else{
+    n.new <- NROW(x)
+    K <- matrix(1, n, n.new)
+    for(i in 1:d){
+      R <- sqrt(distance(X[,i]/theta[i], x[,i]/theta[i]))
+      K <- K * matern.kernel(R, nu=nu[i], derivative=derivative)
+    }
+  }
+  return(K)
+}
+
 #' matGP
 #'
 #' fitting the model with matern kernel.
@@ -200,5 +267,92 @@ matGP <- function(X, y, nu=2.5, g=sqrt(.Machine$double.eps),
     mu.hat <- 0
 
     return(list(theta = outg$par, nu=nu, g=g, Ki=Ki, mu.hat=mu.hat, X = X, y = y, tau2hat=tau2hat, Xscale=Xscale, Yscale=Yscale, constant=constant))
+  }
+}
+
+#' pred.matGP
+#'
+#' predictive posterior mean and variance with matern kernel.
+#'
+#' @param fit an object of class matGP.
+#' @param xnew vector or matrix of new input locations to predict.
+#'
+#' @return A list predictive posterior mean and variance:
+#' \itemize{
+#'   \item \code{mu}: vector of predictive posterior mean.
+#'   \item \code{sig2}: vector of predictive posterior variance.
+#' }
+#'
+#' @noRd
+#' @keywords internal
+#' @examples
+#' \dontrun{
+#' library(lhs)
+#' ### synthetic function ###
+#' f1 <- function(x)
+#' {
+#'   sin(8*pi*x)
+#' }
+#'
+#' ### training data ###
+#' n1 <- 15
+#'
+#' X1 <- maximinLHS(n1, 1)
+#' y1 <- f1(X1)
+#'
+#' fit1 <- matGP(X1, y1, nu=2.5)
+#'
+#' ### test data ###
+#' x <- seq(0,1,0.01)
+#' pred.matGP(fit1, x)
+#' }
+
+pred.matGP <- function(fit, xnew){
+  constant <- fit$constant
+
+  if(constant){
+    xnew <- as.matrix(xnew)
+
+    Xscale <- fit$Xscale
+    Ki <- fit$Ki
+    theta <- fit$theta
+    nu <- fit$nu
+    g <- fit$g
+    X <- fit$X
+    y <- fit$y
+    tau2hat <- fit$tau2hat
+    mu.hat <- fit$mu.hat
+
+    if(Xscale) xnew <- t((t(xnew)-attr(X,"scaled:center"))/attr(X,"scaled:scale"))
+
+    KXX <- cor.sep(xnew, theta=theta, nu=nu)
+    KX <- t(cor.sep(X, xnew, theta=theta, nu=nu))
+
+    mup2 <- mu.hat + KX %*% Ki %*% (y - mu.hat)
+    Sigmap2 <- pmax(0, diag(tau2hat*(KXX + diag(g,nrow(xnew)) - KX %*% Ki %*% t(KX))))
+
+    return(list(mu=mup2, sig2=Sigmap2))
+  }else{
+    xnew <- as.matrix(xnew)
+
+    Xscale <- fit$Xscale
+    Yscale <- fit$Yscale
+    Ki <- fit$Ki
+    theta <- fit$theta
+    nu <- fit$nu
+    g <- fit$g
+    X <- fit$X
+    y <- fit$y
+    tau2hat <- fit$tau2hat
+
+    if(Xscale) xnew <- t((t(xnew)-attr(X,"scaled:center"))/attr(X,"scaled:scale"))
+
+    KXX <- cor.sep(xnew, theta=theta, nu=nu)
+    KX <- t(cor.sep(X, xnew, theta=theta, nu=nu))
+
+    if(Yscale) mup2 <- KX %*% Ki %*% (y + attr(y, "scaled:center")) else mup2 <- KX %*% Ki %*% y
+    Sigmap2 <- pmax(0, diag(tau2hat*(KXX + diag(g,nrow(xnew)) - KX %*% Ki %*% t(KX))))
+
+    return(list(mu=mup2, sig2=Sigmap2))
   }
 }
