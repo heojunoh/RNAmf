@@ -11,7 +11,6 @@
 #' @return A mean of the deduced variance at Xref.
 #' @importFrom plgp covar.sep
 #' @importFrom stats rnorm
-#' @importFrom maximin maximin
 #' @export
 #'
 
@@ -115,7 +114,6 @@ obj.ALC_two_level_1 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
 #' @return A mean of the deduced variance at Xref.
 #' @importFrom plgp covar.sep
 #' @importFrom stats rnorm
-#' @importFrom maximin maximin
 #' @export
 #'
 
