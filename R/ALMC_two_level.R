@@ -107,7 +107,6 @@ ALMC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, 
 
   ### Update the model ###
   newx <- matrix(chosen$Xnext, nrow=1)
-  # if(newx[1,1]==0) newx[1,1] <- sqrt(.Machine$double.eps) # To prevent yielding infinity for Park function
   level <- chosen$level
 
   X1 <- t(t(fit1$X)*attr(fit1$X,"scaled:scale")+attr(fit1$X,"scaled:center"))
@@ -126,16 +125,6 @@ ALMC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, 
   if(level == 1){
     y1.select <- funcs[[1]](newx)
 
-    # ### Blade ###
-    # d1 <- data.frame(newx*0.5+0.25, rep(0.05, 1)) # scale X to [-1,1]
-    # write.csv(d1, "/Users/junoh/Downloads/StackingDesign-Reproducibility/Rmatlab_files/generate_text/temp_to_matlab.txt", row.names=F)
-    # run_matlab_script("/Users/junoh/Downloads/StackingDesign-Reproducibility/Rmatlab_files/SolveJetBlade.m", verbose = FALSE, desktop = FALSE,
-    #                   splash = FALSE, display = FALSE, wait = TRUE, single_thread = FALSE,
-    #                   intern = TRUE)
-    # d2 <- read.table("/Users/junoh/Downloads/StackingDesign-Reproducibility/Rmatlab_files/generate_text/temp_to_r.txt", sep = ",")
-    # y1.select <- d2$V4
-
-
     X1 <- rbind(X1, newx)
     y1 <- c(y1, y1.select)
   }
@@ -144,23 +133,6 @@ ALMC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, 
   if(level == 2){
     y1.select <- funcs[[1]](newx)
     y2.select <- funcs[[2]](newx)
-
-    # ### Blade ###
-    # d1 <- data.frame(newx*0.5+0.25, rep(0.05, 1)) # scale X to [-1,1]
-    # write.csv(d1, "/Users/junoh/Downloads/StackingDesign-Reproducibility/Rmatlab_files/generate_text/temp_to_matlab.txt", row.names=F)
-    # run_matlab_script("/Users/junoh/Downloads/StackingDesign-Reproducibility/Rmatlab_files/SolveJetBlade.m", verbose = FALSE, desktop = FALSE,
-    #                   splash = FALSE, display = FALSE, wait = TRUE, single_thread = FALSE,
-    #                   intern = TRUE)
-    # d2 <- read.table("/Users/junoh/Downloads/StackingDesign-Reproducibility/Rmatlab_files/generate_text/temp_to_r.txt", sep = ",")
-    # y1.select <- d2$V4
-    #
-    # d1 <- data.frame(newx*0.5+0.25, rep(0.0125, 1)) # scale X to [-1,1]
-    # write.csv(d1, "/Users/junoh/Downloads/StackingDesign-Reproducibility/Rmatlab_files/generate_text/temp_to_matlab.txt", row.names=F)
-    # run_matlab_script("/Users/junoh/Downloads/StackingDesign-Reproducibility/Rmatlab_files/SolveJetBlade.m", verbose = FALSE, desktop = FALSE,
-    #                   splash = FALSE, display = FALSE, wait = TRUE, single_thread = FALSE,
-    #                   intern = TRUE)
-    # d2 <- read.table("/Users/junoh/Downloads/StackingDesign-Reproducibility/Rmatlab_files/generate_text/temp_to_r.txt", sep = ",")
-    # y2.select <- d2$V4
 
     X1 <- rbind(X1, newx)
     y1 <- c(y1, y1.select)
