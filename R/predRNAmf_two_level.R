@@ -1,6 +1,15 @@
-#' predRNAmf
-#'
 #' predictive posterior mean and variance of the model with fidelity level 1 and 2.
+#'
+#' @description The function computes the posterior mean and variance of RNA models with two fidelity levels
+#' by fitted model using \code{\link{RNAmf_two_level}}.
+#'
+#' @seealso \code{\link{RNAmf_two_level}} for prediction.
+#'
+#' @details From the model fitted by \code{\link{RNAmf_two_level}},
+#' the posterior mean and variance are calculated based on the closed form expression derived by a recursive fashion.
+#' The formulae depend on its kernel choices.
+#' For Matern kernels, \code{\link{zetafun}} computes the part of the posterior variance.
+#' For details, see Heo and Sung (2023+, <arXiv:2309.11772>).
 #'
 #' @param fit an object of class RNAmf.
 #' @param x vector or matrix of new input locations to predict.
@@ -17,7 +26,7 @@
 #' library(MuFiCokriging)
 #' library(lhs)
 #'
-#' ### synthetic function ###
+#' ### Perdikaris function ###
 #' f1 <- function(x)
 #' {
 #'   sin(8*pi*x)
@@ -29,7 +38,7 @@
 #' }
 #'
 #' ### training data ###
-#' n1 <- 15; n2 <- 10
+#' n1 <- 13; n2 <- 8
 #'
 #' X1 <- maximinLHS(n1, 1)
 #' X2 <- maximinLHS(n2, 1)
@@ -43,15 +52,19 @@
 #' y2 <- f2(X2)
 #'
 #' ### test data ###
-#' x <- seq(0,1,length.out=100)
+#' x <- seq(0,1,length.out=1000)
 #'
 #' ### fitting ###
-#' fit.RNAmf <- RNAmf(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
-#' predy <- predRNAmf(fit.RNAmf, x)$mu
-#' predsig2 <- predRNAmf(fit.RNAmf, x)$sig2
+#' fit.RNAmf <- RNAmf_two_level(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
+#' pred.RNAmf <- predRNAmf_two_level(fit.RNAmf, x)
+#' predy <- pred.RNAmf$mu
+#' predsig2 <- pred.RNAmf$sig2
+#'
+#' ### RMSE ###
+#' sqrt(mean((predy-f2(x))^2))
 #'
 
-predRNAmf <- function(fit, x){
+predRNAmf_two_level <- function(fit, x){
   kernel <- fit$kernel
   constant <- fit$constant
   fit1 <- fit$fit1
@@ -78,8 +91,8 @@ predRNAmf <- function(fit, x){
       a <- Ci %*% (y2 - mu2)
 
       ### scale new inputs ###
-      x <- t((t(x)-attr(fit2$X,"scaled:center")[1:d])/attr(fit2$X,"scaled:scale")[1:d])
-      x.mu <- t((t(x.mu)-attr(fit2$X,"scaled:center")[d+1])/attr(fit2$X,"scaled:scale")[d+1])
+      x <- scale.inputs(x, attr(fit2$X,"scaled:center")[1:d], attr(fit2$X,"scaled:scale")[1:d])
+      x.mu <- scale.inputs(x.mu, attr(fit2$X,"scaled:center")[d+1], attr(fit2$X,"scaled:scale")[d+1])
       sig2 <- sig2/attr(fit2$X,"scaled:scale")[d+1]^2
 
       # mean
@@ -117,8 +130,8 @@ predRNAmf <- function(fit, x){
       a <- Ci %*% (y2 + attr(y2, "scaled:center"))
 
       ### scale new inputs ###
-      x <- t((t(x)-attr(fit2$X,"scaled:center")[1:d])/attr(fit2$X,"scaled:scale")[1:d])
-      x.mu <- t((t(x.mu)-attr(fit2$X,"scaled:center")[d+1])/attr(fit2$X,"scaled:scale")[d+1])
+      x <- scale.inputs(x, attr(fit2$X,"scaled:center")[1:d], attr(fit2$X,"scaled:scale")[1:d])
+      x.mu <- scale.inputs(x.mu, attr(fit2$X,"scaled:center")[d+1], attr(fit2$X,"scaled:scale")[d+1])
       sig2 <- sig2/attr(fit2$X,"scaled:scale")[d+1]^2
 
       # mean
@@ -159,8 +172,8 @@ predRNAmf <- function(fit, x){
       a <- Ci %*% (y2 - mu2)
 
       ### scale new inputs ###
-      x <- t((t(x)-attr(fit2$X,"scaled:center")[1:d])/attr(fit2$X,"scaled:scale")[1:d])
-      x.mu <- t((t(x.mu)-attr(fit2$X,"scaled:center")[d+1])/attr(fit2$X,"scaled:scale")[d+1])
+      x <- scale.inputs(x, attr(fit2$X,"scaled:center")[1:d], attr(fit2$X,"scaled:scale")[1:d])
+      x.mu <- scale.inputs(x.mu, attr(fit2$X,"scaled:center")[d+1], attr(fit2$X,"scaled:scale")[d+1])
       sig2 <- sig2/attr(fit2$X,"scaled:scale")[d+1]^2
 
       # mean
@@ -214,8 +227,8 @@ predRNAmf <- function(fit, x){
       a <- Ci %*% (y2 + attr(y2, "scaled:center"))
 
       ### scale new inputs ###
-      x <- t((t(x)-attr(fit2$X,"scaled:center")[1:d])/attr(fit2$X,"scaled:scale")[1:d])
-      x.mu <- t((t(x.mu)-attr(fit2$X,"scaled:center")[d+1])/attr(fit2$X,"scaled:scale")[d+1])
+      x <- scale.inputs(x, attr(fit2$X,"scaled:center")[1:d], attr(fit2$X,"scaled:scale")[1:d])
+      x.mu <- scale.inputs(x.mu, attr(fit2$X,"scaled:center")[d+1], attr(fit2$X,"scaled:scale")[d+1])
       sig2 <- sig2/attr(fit2$X,"scaled:scale")[d+1]^2
 
       # mean
@@ -272,8 +285,8 @@ predRNAmf <- function(fit, x){
       a <- Ci %*% (y2 - mu2)
 
       ### scale new inputs ###
-      x <- t((t(x)-attr(fit2$X,"scaled:center")[1:d])/attr(fit2$X,"scaled:scale")[1:d])
-      x.mu <- t((t(x.mu)-attr(fit2$X,"scaled:center")[d+1])/attr(fit2$X,"scaled:scale")[d+1])
+      x <- scale.inputs(x, attr(fit2$X,"scaled:center")[1:d], attr(fit2$X,"scaled:scale")[1:d])
+      x.mu <- scale.inputs(x.mu, attr(fit2$X,"scaled:center")[d+1], attr(fit2$X,"scaled:scale")[d+1])
       sig2 <- sig2/attr(fit2$X,"scaled:scale")[d+1]^2
 
       # mean
@@ -332,8 +345,8 @@ predRNAmf <- function(fit, x){
       a <- Ci %*% (y2 + attr(y2, "scaled:center"))
 
       ### scale new inputs ###
-      x <- t((t(x)-attr(fit2$X,"scaled:center")[1:d])/attr(fit2$X,"scaled:scale")[1:d])
-      x.mu <- t((t(x.mu)-attr(fit2$X,"scaled:center")[d+1])/attr(fit2$X,"scaled:scale")[d+1])
+      x <- scale.inputs(x, attr(fit2$X,"scaled:center")[1:d], attr(fit2$X,"scaled:scale")[1:d])
+      x.mu <- scale.inputs(x.mu, attr(fit2$X,"scaled:center")[d+1], attr(fit2$X,"scaled:scale")[d+1])
       sig2 <- sig2/attr(fit2$X,"scaled:scale")[d+1]^2
 
       # mean

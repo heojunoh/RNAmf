@@ -2,7 +2,7 @@
 % Please edit documentation in R/zetafun.R
 \name{zetafun}
 \alias{zetafun}
-\title{zetafun}
+\title{computing zeta component in the closed form posterior variance of matern kernel.}
 \usage{
 zetafun(w1, w2, m, s, nu, theta)
 }
@@ -23,5 +23,5 @@ zetafun(w1, w2, m, s, nu, theta)
 calculated value of zeta component.
 }
 \description{
-computing zeta component in the closed form of matern kernel.
+computing zeta component in the closed form posterior variance of matern kernel.
 }

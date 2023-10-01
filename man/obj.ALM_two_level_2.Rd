@@ -2,7 +2,7 @@
 % Please edit documentation in R/ALM_two_level.R
 \name{obj.ALM_two_level_2}
 \alias{obj.ALM_two_level_2}
-\title{obj.ALM_two_level_2}
+\title{object to optimize the point by ALM criterion updating at level 2 with two levels of fidelity}
 \usage{
 obj.ALM_two_level_2(Xcand, fit)
 }

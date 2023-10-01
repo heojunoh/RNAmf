@@ -1,5 +1,3 @@
-#' matern.kernel
-#'
 #' calculating matern kernel with corresponding smoothness parameter
 #'
 #'
@@ -31,8 +29,6 @@ matern.kernel <- function(r,nu,derivative=0){
   return(out)
 }
 
-#' cor.sep
-#'
 #' calculating separable matern kernel
 #'
 #' @param X vector or matrix of input.
@@ -65,8 +61,6 @@ cor.sep <- function(X, x=NULL, theta, nu, derivative=0){
   return(K)
 }
 
-#' matGP
-#'
 #' fitting the model with matern kernel.
 #'
 #' @param X vector or matrix of input locations.
@@ -149,7 +143,7 @@ matGP <- function(X, y, nu=2.5, g=sqrt(.Machine$double.eps),
     # init <- sqrt(lower*upper)
 
     if(Xscale){
-      X <- scale(X, center = TRUE, scale = TRUE)
+      X <- scale.inputs(X)
     }else{
       attr(X,"scaled:center") <- rep(0, ncol(X))
       attr(X,"scaled:scale") <- rep(1, ncol(X))
@@ -239,7 +233,7 @@ matGP <- function(X, y, nu=2.5, g=sqrt(.Machine$double.eps),
     # init <- sqrt(lower*upper)
 
     if(Xscale){
-      X <- scale(X, center = TRUE, scale = TRUE)
+      X <- scale.inputs(X)
     }else{
       attr(X,"scaled:center") <- rep(0, ncol(X))
       attr(X,"scaled:scale") <- rep(1, ncol(X))
@@ -270,8 +264,6 @@ matGP <- function(X, y, nu=2.5, g=sqrt(.Machine$double.eps),
   }
 }
 
-#' pred.matGP
-#'
 #' predictive posterior mean and variance with matern kernel.
 #'
 #' @param fit an object of class matGP.
@@ -323,7 +315,7 @@ pred.matGP <- function(fit, xnew){
     tau2hat <- fit$tau2hat
     mu.hat <- fit$mu.hat
 
-    if(Xscale) xnew <- t((t(xnew)-attr(X,"scaled:center"))/attr(X,"scaled:scale"))
+    if(Xscale) xnew <- scale.inputs(xnew, attr(X,"scaled:center"), attr(X,"scaled:scale"))
 
     KXX <- cor.sep(xnew, theta=theta, nu=nu)
     KX <- t(cor.sep(X, xnew, theta=theta, nu=nu))
@@ -345,7 +337,7 @@ pred.matGP <- function(fit, xnew){
     y <- fit$y
     tau2hat <- fit$tau2hat
 
-    if(Xscale) xnew <- t((t(xnew)-attr(X,"scaled:center"))/attr(X,"scaled:scale"))
+    if(Xscale) xnew <- scale.inputs(xnew, attr(X,"scaled:center"), attr(X,"scaled:scale"))
 
     KXX <- cor.sep(xnew, theta=theta, nu=nu)
     KX <- t(cor.sep(X, xnew, theta=theta, nu=nu))

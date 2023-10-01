@@ -1,5 +1,3 @@
-#' GP
-#'
 #' fitting the model with squared exponential kernel.
 #'
 #' @param X vector or matrix of input locations.
@@ -81,7 +79,7 @@ GP <- function(X, y, g=sqrt(.Machine$double.eps),
     # init <- sqrt(lower*upper)
 
     if(Xscale){
-      X <- scale(X, center = TRUE, scale = TRUE)
+      X <- scale.inputs(X)
     }else{
       attr(X,"scaled:center") <- rep(0, ncol(X))
       attr(X,"scaled:scale") <- rep(1, ncol(X))
@@ -167,7 +165,7 @@ GP <- function(X, y, g=sqrt(.Machine$double.eps),
     # init <- sqrt(lower*upper)
 
     if(Xscale){
-      X <- scale(X, center = TRUE, scale = TRUE)
+      X <- scale.inputs(X)
     }else{
       attr(X,"scaled:center") <- rep(0, ncol(X))
       attr(X,"scaled:scale") <- rep(1, ncol(X))
@@ -199,8 +197,6 @@ GP <- function(X, y, g=sqrt(.Machine$double.eps),
   }
 }
 
-#' pred.GP
-#'
 #' predictive posterior mean and variance with squared exponential kernel.
 #'
 #' @param fit an object of class GP.
@@ -252,7 +248,7 @@ pred.GP <- function(fit, xnew){
     tau2hat <- fit$tau2hat
     mu.hat <- fit$mu.hat
 
-    if(Xscale) xnew <- t((t(xnew)-attr(X,"scaled:center"))/attr(X,"scaled:scale"))
+    if(Xscale) xnew <- scale.inputs(xnew, attr(X,"scaled:center"), attr(X,"scaled:scale"))
 
     KXX <- covar.sep(xnew, d=theta, g=g)
     KX <- covar.sep(xnew, X, d=theta, g=0)
@@ -273,7 +269,7 @@ pred.GP <- function(fit, xnew){
     y <- fit$y
     tau2hat <- fit$tau2hat
 
-    if(Xscale) xnew <- t((t(xnew)-attr(X,"scaled:center"))/attr(X,"scaled:scale"))
+    if(Xscale) xnew <- scale.inputs(xnew, attr(X,"scaled:center"), attr(X,"scaled:scale"))
 
     KXX <- covar.sep(xnew, d=theta, g=g)
     KX <- covar.sep(xnew, X, d=theta, g=0)

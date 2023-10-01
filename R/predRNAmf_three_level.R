@@ -1,8 +1,17 @@
-#' predRNAmf2
-#'
 #' predictive posterior mean and variance of the model with fidelity level 1, 2 and 3.
 #'
-#' @param fit an object of class RNAmf2.
+#' @description The function computes the posterior mean and variance of RNA models with three fidelity levels
+#' by fitted model using \code{\link{RNAmf_three_level}}.
+#'
+#' @seealso \code{\link{RNAmf_three_level}} for prediction.
+#'
+#' @details From the model fitted by \code{\link{RNAmf_three_level}},
+#' the posterior mean and variance are calculated based on the closed form expression derived by a recursive fashion.
+#' The formulae depend on its kernel choices.
+#' For Matern kernels, \code{\link{zetafun}} computes the part of the posterior variance.
+#' For details, see Heo and Sung (2023+, <arXiv:2309.11772>).
+#'
+#' @param fit an object of class RNAmf_three_level.
 #' @param x vector or matrix of new input locations to predict.
 #'
 #' @return A list predictive posterior mean and variance:
@@ -13,21 +22,100 @@
 #'
 #' #' @importFrom plgp distance
 #' @export
+#' @examples
+#' library(MuFiCokriging)
+#' library(lhs)
+#'
+#' ### Branin function ###
+#' branin <- function(xx){
+#'   x1 <- xx[1]
+#'   x2 <- xx[2]
+#'
+#'   (-1.275*x1^2/pi^2+5*x1/pi+x2-6)^2 + (10-5/(4*pi))*cos(x1)+ 10
+#' }
+#'
+#' braninm <- function(xx)
+#' {
+#'   x1 <- xx[1]
+#'   x2 <- xx[2]
+#'
+#'   10*sqrt((-1.275*(x1+2)^2/pi^2+5*(x1+2)/pi+(x2+2)-6)^2 + (10-5/(4*pi))*cos((x1+2))+ 10) +
+#'   2*(x1-0.5) - 3*(3*x2-1) - 1
+#' }
+#'
+#' braninl <- function(xx)
+#' { x1 <- xx[1]
+#' x2 <- xx[2]
+#'
+#' 10*sqrt((-1.275*(1.2*x1+0.4)^2/pi^2+5*(1.2*x1+0.4)/pi+(1.2*x2+0.4)-6)^2 +
+#' (10-5/(4*pi))*cos((1.2*x1+0.4))+ 10) + 2*(1.2*x1+1.9) - 3*(3*(1.2*x2+2.4)-1) - 1 - 3*x2 + 1
+#' }
+#'
+#' output.branin <- function(x){
+#'   factor_range <- list("x1" = c(-5, 10), "x2" = c(0, 15))
+#'
+#'   for(i in 1:length(factor_range)) x[i] <- factor_range[[i]][1] + x[i] * diff(factor_range[[i]])
+#'   branin(x[1:2])
+#' }
+#'
+#' output.braninl <- function(x){
+#'   factor_range <- list("x1" = c(-5, 10), "x2" = c(0, 15))
+#'
+#'   for(i in 1:length(factor_range)) x[i] <- factor_range[[i]][1] + x[i] * diff(factor_range[[i]])
+#'   braninl(x[1:2])
+#' }
+#'
+#' output.braninm <- function(x){
+#'   factor_range <- list("x1" = c(-5, 10), "x2" = c(0, 15))
+#'
+#'   for(i in 1:length(factor_range)) x[i] <- factor_range[[i]][1] + x[i] * diff(factor_range[[i]])
+#'   braninm(x[1:2])
+#' }
+#'
+#'
+#' ### training data ###
+#' n1 <- 20; n2 <- 15; n3 <- 10
+#'
+#' X1 <- maximinLHS(n1, 2)
+#' X2 <- maximinLHS(n2, 2)
+#' X3 <- maximinLHS(n3, 2)
+#'
+#' NestDesign <- NestedDesignBuild(design = list(X1,X2,X3))
+#'
+#' X1 <- NestDesign$PX
+#' X2 <- ExtractNestDesign(NestDesign,2)
+#' X3 <- ExtractNestDesign(NestDesign,3)
+#'
+#' y1 <- apply(X1,1,output.braninl)
+#' y2 <- apply(X2,1,output.braninm)
+#' y3 <- apply(X3,1,output.branin)
+#'
+#' ### test data ###
+#' x <- maximinLHS(1000, 2)
+#'
+#' ### fitting ###
+#' fit.RNAmf <- RNAmf_three_level(X1, y1, X2, y2, X3, y3, kernel="sqex", constant=TRUE)
+#' pred.RNAmf <- predRNAmf_three_level(fit.RNAmf, x)
+#' predy <- pred.RNAmf$mu
+#' predsig2 <- pred.RNAmf$sig2
+#'
+#' ### RMSE ###
+#' sqrt(mean((predy-apply(x,1,output.branin))^2))
 #'
 
-predRNAmf2 <- function(fit, x){
+predRNAmf_three_level <- function(fit, x){
   kernel <- fit$kernel
   constant <- fit$constant
-  fit.RNAmf1 <- fit$fit.RNAmf1
-  fit1 <- fit.RNAmf1$fit1
-  fit2 <- fit.RNAmf1$fit2
+  fit.RNAmf_two_level <- fit$fit.RNAmf_two_level
+  fit1 <- fit.RNAmf_two_level$fit1
+  fit2 <- fit.RNAmf_two_level$fit2
   fit3 <- fit$fit3
 
   if(kernel=="sqex"){
     if(constant){
-      pred.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
-      x.mu <- pred.RNAmf1$mu
-      sig2 <- pred.RNAmf1$sig2
+      pred.RNAmf_two_level <- predRNAmf_two_level(fit.RNAmf_two_level, x)
+      x.mu <- pred.RNAmf_two_level$mu
+      sig2 <- pred.RNAmf_two_level$sig2
 
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
@@ -45,8 +133,8 @@ predRNAmf2 <- function(fit, x){
       a <- Ci %*% (y3 - mu3)
 
       ### scale new inputs ###
-      x <- t((t(x)-attr(fit3$X,"scaled:center")[1:d])/attr(fit3$X,"scaled:scale")[1:d])
-      x.mu <- t((t(x.mu)-attr(fit3$X,"scaled:center")[d+1])/attr(fit3$X,"scaled:scale")[d+1])
+      x <- scale.inputs(x, attr(fit3$X,"scaled:center")[1:d], attr(fit3$X,"scaled:scale")[1:d])
+      x.mu <- scale.inputs(x.mu, attr(fit3$X,"scaled:center")[d+1], attr(fit3$X,"scaled:scale")[d+1])
       sig2 <- sig2/attr(fit3$X,"scaled:scale")[d+1]^2
 
       # mean
@@ -66,9 +154,9 @@ predRNAmf2 <- function(fit, x){
         predsig2[i] <- pmax(0, tau2hat - (predy[i]-mu3)^2 + drop(t(a)%*%mat%*%a) - tau2hat*sum(diag(Ci%*%mat)))
       }
     }else{
-      pred.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
-      x.mu <- pred.RNAmf1$mu
-      sig2 <- pred.RNAmf1$sig2
+      pred.RNAmf_two_level <- predRNAmf_two_level(fit.RNAmf_two_level, x)
+      x.mu <- pred.RNAmf_two_level$mu
+      sig2 <- pred.RNAmf_two_level$sig2
 
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
@@ -85,8 +173,8 @@ predRNAmf2 <- function(fit, x){
       a <- Ci %*% (y3 + attr(y3, "scaled:center"))
 
       ### scale new inputs ###
-      x <- t((t(x)-attr(fit3$X,"scaled:center")[1:d])/attr(fit3$X,"scaled:scale")[1:d])
-      x.mu <- t((t(x.mu)-attr(fit3$X,"scaled:center")[d+1])/attr(fit3$X,"scaled:scale")[d+1])
+      x <- scale.inputs(x, attr(fit3$X,"scaled:center")[1:d], attr(fit3$X,"scaled:scale")[1:d])
+      x.mu <- scale.inputs(x.mu, attr(fit3$X,"scaled:center")[d+1], attr(fit3$X,"scaled:scale")[d+1])
       sig2 <- sig2/attr(fit3$X,"scaled:scale")[d+1]^2
 
       # mean
@@ -110,9 +198,9 @@ predRNAmf2 <- function(fit, x){
     if(constant){
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      pred.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
-      x.mu <- pred.RNAmf1$mu
-      sig2 <- pred.RNAmf1$sig2
+      pred.RNAmf_two_level <- predRNAmf_two_level(fit.RNAmf_two_level, x)
+      x.mu <- pred.RNAmf_two_level$mu
+      sig2 <- pred.RNAmf_two_level$sig2
 
       ### calculate the closed form ###
       X3 <- matrix(fit3$X[,-(d+1)], ncol=d)
@@ -127,8 +215,8 @@ predRNAmf2 <- function(fit, x){
       a <- Ci %*% (y3 - mu3)
 
       ### scale new inputs ###
-      x <- t((t(x)-attr(fit3$X,"scaled:center")[1:d])/attr(fit3$X,"scaled:scale")[1:d])
-      x.mu <- t((t(x.mu)-attr(fit3$X,"scaled:center")[d+1])/attr(fit3$X,"scaled:scale")[d+1])
+      x <- scale.inputs(x, attr(fit3$X,"scaled:center")[1:d], attr(fit3$X,"scaled:scale")[1:d])
+      x.mu <- scale.inputs(x.mu, attr(fit3$X,"scaled:center")[d+1], attr(fit3$X,"scaled:scale")[d+1])
       sig2 <- sig2/attr(fit3$X,"scaled:scale")[d+1]^2
 
       # mean
@@ -168,9 +256,9 @@ predRNAmf2 <- function(fit, x){
     }else{
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      pred.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
-      x.mu <- pred.RNAmf1$mu
-      sig2 <- pred.RNAmf1$sig2
+      pred.RNAmf_two_level <- predRNAmf_two_level(fit.RNAmf_two_level, x)
+      x.mu <- pred.RNAmf_two_level$mu
+      sig2 <- pred.RNAmf_two_level$sig2
 
       ### calculate the closed form ###
       X3 <- matrix(fit3$X[,-(d+1)], ncol=d)
@@ -184,8 +272,8 @@ predRNAmf2 <- function(fit, x){
       a <- Ci %*% (y3 + attr(y3, "scaled:center"))
 
       ### scale new inputs ###
-      x <- t((t(x)-attr(fit3$X,"scaled:center")[1:d])/attr(fit3$X,"scaled:scale")[1:d])
-      x.mu <- t((t(x.mu)-attr(fit3$X,"scaled:center")[d+1])/attr(fit3$X,"scaled:scale")[d+1])
+      x <- scale.inputs(x, attr(fit3$X,"scaled:center")[1:d], attr(fit3$X,"scaled:scale")[1:d])
+      x.mu <- scale.inputs(x.mu, attr(fit3$X,"scaled:center")[d+1], attr(fit3$X,"scaled:scale")[d+1])
       sig2 <- sig2/attr(fit3$X,"scaled:scale")[d+1]^2
 
       # mean
@@ -226,9 +314,9 @@ predRNAmf2 <- function(fit, x){
     if(constant){
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      pred.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
-      x.mu <- pred.RNAmf1$mu
-      sig2 <- pred.RNAmf1$sig2
+      pred.RNAmf_two_level <- predRNAmf_two_level(fit.RNAmf_two_level, x)
+      x.mu <- pred.RNAmf_two_level$mu
+      sig2 <- pred.RNAmf_two_level$sig2
 
       ### calculate the closed form ###
       X3 <- matrix(fit3$X[,-(d+1)], ncol=d)
@@ -243,8 +331,8 @@ predRNAmf2 <- function(fit, x){
       a <- Ci %*% (y3 - mu3)
 
       ### scale new inputs ###
-      x <- t((t(x)-attr(fit3$X,"scaled:center")[1:d])/attr(fit3$X,"scaled:scale")[1:d])
-      x.mu <- t((t(x.mu)-attr(fit3$X,"scaled:center")[d+1])/attr(fit3$X,"scaled:scale")[d+1])
+      x <- scale.inputs(x, attr(fit3$X,"scaled:center")[1:d], attr(fit3$X,"scaled:scale")[1:d])
+      x.mu <- scale.inputs(x.mu, attr(fit3$X,"scaled:center")[d+1], attr(fit3$X,"scaled:scale")[d+1])
       sig2 <- sig2/attr(fit3$X,"scaled:scale")[d+1]^2
 
       # mean
@@ -287,9 +375,9 @@ predRNAmf2 <- function(fit, x){
     }else{
       d <- ncol(fit1$X)
       x <- matrix(x, ncol=d)
-      pred.RNAmf1 <- predRNAmf(fit.RNAmf1, x)
-      x.mu <- pred.RNAmf1$mu
-      sig2 <- pred.RNAmf1$sig2
+      pred.RNAmf_two_level <- predRNAmf_two_level(fit.RNAmf_two_level, x)
+      x.mu <- pred.RNAmf_two_level$mu
+      sig2 <- pred.RNAmf_two_level$sig2
 
       ### calculate the closed form ###
       X3 <- matrix(fit3$X[,-(d+1)], ncol=d)
@@ -303,8 +391,8 @@ predRNAmf2 <- function(fit, x){
       a <- Ci %*% (y3 + attr(y3, "scaled:center"))
 
       ### scale new inputs ###
-      x <- t((t(x)-attr(fit3$X,"scaled:center")[1:d])/attr(fit3$X,"scaled:scale")[1:d])
-      x.mu <- t((t(x.mu)-attr(fit3$X,"scaled:center")[d+1])/attr(fit3$X,"scaled:scale")[d+1])
+      x <- scale.inputs(x, attr(fit3$X,"scaled:center")[1:d], attr(fit3$X,"scaled:scale")[1:d])
+      x.mu <- scale.inputs(x.mu, attr(fit3$X,"scaled:center")[d+1], attr(fit3$X,"scaled:scale")[d+1])
       sig2 <- sig2/attr(fit3$X,"scaled:scale")[d+1]^2
 
       # mean

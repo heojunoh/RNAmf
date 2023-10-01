@@ -1,5 +1,3 @@
-#' obj.ALC_two_level_1
-#'
 #' object to optimize the next point by ALC criterion updating at level 1 with two levels of fidelity
 #'
 #' @param Xcand candidate data point to be optimized.
@@ -39,7 +37,7 @@ obj.ALC_two_level_1 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
     y1.sample <- rnorm(mc.sample, mean=pred.matGP(f1, Xcand)$mu, sd=sqrt(pred.matGP(f1, Xcand)$sig2))
   }
 
-  Xcand <- matrix((Xcand-x.center1)/x.scale1, nrow=1)
+  Xcand <- scale.inputs(Xcand, x.center1, x.scale1)
 
   ### Choose level 1 ###
   ### update Ki1
@@ -79,7 +77,7 @@ obj.ALC_two_level_1 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
 
       fit.tmp$fit1 <- fit1
 
-      return(mean(predRNAmf(fit.tmp, Xref)$sig2)) # to minimize the deduced variance. To maximize, -mean
+      return(mean(predRNAmf_two_level(fit.tmp, Xref)$sig2)) # to minimize the deduced variance. To maximize, -mean
     }
   }else{
     for(i in 1:mc.sample){
@@ -94,15 +92,13 @@ obj.ALC_two_level_1 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
 
       fit.tmp$fit1 <- fit1
 
-      ALC.out[i] <- mean(predRNAmf(fit.tmp, Xref)$sig2) # to minimize the deduced variance. To maximize, -mean
+      ALC.out[i] <- mean(predRNAmf_two_level(fit.tmp, Xref)$sig2) # to minimize the deduced variance. To maximize, -mean
     }
   }
   return(mean(ALC.out))
 }
 
 
-#' obj.ALC_two_level_2
-#'
 #' object to optimize the next point by ALC criterion updating at level 2 with two levels of fidelity
 #'
 #' @param Xcand candidate data point to be optimized.
@@ -141,7 +137,7 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
   }else if(kernel=="matern2.5"){
     y1.sample <- rnorm(mc.sample, mean=pred.matGP(f1, Xcand)$mu, sd=sqrt(pred.matGP(f1, Xcand)$sig2))
   }
-  Xcand <- matrix((Xcand-x.center1)/x.scale1, nrow=1)
+  Xcand <- scale.inputs(Xcand, x.center1, x.scale1)
 
   ### Choose level 1 ###
   ### update Ki1
@@ -193,7 +189,7 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
       }
 
       ### update Ki2
-      newx2 <- t((t(cbind(Xcand, y1.sample[i]))-x.center2)/x.scale2)
+      newx2 <- scale.inputs(cbind(Xcand, y1.sample[i]), x.center2, x.scale2)
 
       if(kernel=="sqex"){
         cov.newx2 <- covar.sep(X1=newx2, d=f2$theta, g=g)
@@ -226,7 +222,7 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
 
       fit.tmp$fit2 <- fit2
 
-      return(mean(predRNAmf(fit.tmp, Xref)$sig2)) # to minimize the deduced variance. To maximize, -mean
+      return(mean(predRNAmf_two_level(fit.tmp, Xref)$sig2)) # to minimize the deduced variance. To maximize, -mean
     }
   }else{
     ALC.out <- rep(0, mc.sample)
@@ -256,7 +252,7 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
       }
 
       ### update Ki2
-      newx2 <- t((t(cbind(Xcand, y1.sample[i]))-x.center2)/x.scale2)
+      newx2 <- scale.inputs(cbind(Xcand, y1.sample[i]), x.center2, x.scale2)
 
       if(kernel=="sqex"){
         cov.newx2 <- covar.sep(X1=newx2, d=f2$theta, g=g)
@@ -289,15 +285,13 @@ obj.ALC_two_level_2 <- function(Xcand, Xref, fit, mc.sample, parallel=FALSE, nco
 
       fit.tmp$fit2 <- fit2
 
-      ALC.out[i] <- mean(predRNAmf(fit.tmp, Xref)$sig2) # to minimize the deduced variance. To maximize, -mean
+      ALC.out[i] <- mean(predRNAmf_two_level(fit.tmp, Xref)$sig2) # to minimize the deduced variance. To maximize, -mean
     }
   }
 
   return(mean(ALC.out))
 }
 
-#' ALC_two_level
-#'
 #' find the next point by ALC criterion with two fidelity levels and update the model
 #'
 #' @param Xref vector or matrix of reference data.
@@ -336,7 +330,7 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, p
   if(missing(n.start)) n.start <- 10 * dim(fit$fit1$X)[2]
   if(parallel) registerDoParallel(ncore)
 
-  Icurrent <- mean(predRNAmf(fit, Xref)$sig2)
+  Icurrent <- mean(predRNAmf_two_level(fit, Xref)$sig2)
 
   fit1 <- f1 <- fit$fit1
   fit2 <- f2 <- fit$fit2
@@ -414,8 +408,8 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, p
   newx <- matrix(chosen$Xnext, nrow=1)
   level <- chosen$level
 
-  X1 <- t(t(fit1$X)*attr(fit1$X,"scaled:scale")+attr(fit1$X,"scaled:center"))
-  X2 <- matrix(t(t(fit2$X)*attr(fit2$X,"scaled:scale")+attr(fit2$X,"scaled:center"))[,-ncol(fit2$X)], ncol=ncol(fit2$X)-1)
+  X1 <- scale.inputs(fit1$X, x.center1, x.scale1, back=TRUE)
+  X2 <- matrix(scale.inputs(fit2$X, x.center2, x.scale2, back=TRUE)[,-ncol(fit2$X)], ncol=ncol(fit2$X)-1)
 
   if(constant){
     y1 <- fit1$y
@@ -445,7 +439,7 @@ ALC_two_level <- function(Xref=NULL, fit, mc.sample=100, cost, funcs, n.start, p
     y2 <- c(y2, y2.select)
   }
 
-  fit <- RNAmf(X1, y1, X2, y2, kernel=kernel, constant=constant)
+  fit <- RNAmf_two_level(X1, y1, X2, y2, kernel=kernel, constant=constant)
 
   if(parallel)  stopImplicitCluster()
 

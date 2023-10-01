@@ -2,9 +2,9 @@ Package: RNAmf
 Type: Package
 Title: Recursive non-additive emulation for multi-fidelity data
 Version: 0.1.0
-Author: Junoh Heo <heojunoh@msu.edu>
+Author: Junoh Heo <heojunoh@msu.edu>, Chih-Li Sung <sungchih@msu.edu>
 Maintainer: Junoh Heo <heojunoh@msu.edu>
-Description: Multi-fidelity emulation by incorporating the outputs from previous layer to the input recursively,
+Description: Multi-fidelity emulation proposed by Heo and Sung (2023+) <arXiv:2309.11772> by incorporating the outputs from previous layer to the input recursively,
     which enables a comprehensive analysis of complex computer codes, capturing functional correlations
     between different fidelity levels and enhancing the modeling and prediction capabilities.
 License: GPL-2

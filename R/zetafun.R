@@ -1,6 +1,4 @@
-#' zetafun
-#'
-#' computing zeta component in the closed form of matern kernel.
+#' computing zeta component in the closed form posterior variance of matern kernel.
 #'
 #' @param w1 numerical value of f_1(x_k).
 #' @param w2 numerical value of f_1(x_l).

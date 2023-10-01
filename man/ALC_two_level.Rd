@@ -2,7 +2,7 @@
 % Please edit documentation in R/ALC_two_level.R
 \name{ALC_two_level}
 \alias{ALC_two_level}
-\title{ALC_two_level}
+\title{find the next point by ALC criterion with two fidelity levels and update the model}
 \usage{
 ALC_two_level(
   Xref = NULL,

@@ -2,7 +2,7 @@
 % Please edit documentation in R/ALM_two_level.R
 \name{ALM_two_level}
 \alias{ALM_two_level}
-\title{ALM_two_level_optm}
+\title{find the next point by ALM criterion with two fidelity levels and update the model}
 \usage{
 ALM_two_level(fit, cost, funcs, n.start, parallel = FALSE, ncore = 1)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/ALMC_two_level.R
 \name{ALMC_two_level}
 \alias{ALMC_two_level}
-\title{ALMC_two_level}
+\title{find the next point by ALMC criterion with two fidelity levels and update the model}
 \usage{
 ALMC_two_level(
   Xref = NULL,

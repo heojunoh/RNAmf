@@ -2,7 +2,7 @@
 % Please edit documentation in R/ALC_two_level.R
 \name{obj.ALC_two_level_1}
 \alias{obj.ALC_two_level_1}
-\title{obj.ALC_two_level_1}
+\title{object to optimize the next point by ALC criterion updating at level 1 with two levels of fidelity}
 \usage{
 obj.ALC_two_level_1(Xcand, Xref, fit, mc.sample, parallel = FALSE, ncore = 1)
 }

@@ -1,5 +1,3 @@
-#' obj.ALM_two_level_1
-#'
 #' object to optimize the point by ALM criterion updating at level 1 with two levels of fidelity
 #'
 #' @param Xcand candidate data point to be optimized.
@@ -27,8 +25,6 @@ obj.ALM_two_level_1 <- function(Xcand, fit){
 }
 
 
-#' obj.ALM_two_level_2
-#'
 #' object to optimize the point by ALM criterion updating at level 2 with two levels of fidelity
 #'
 #' @param Xcand candidate data point to be optimized.
@@ -39,13 +35,13 @@ obj.ALM_two_level_1 <- function(Xcand, fit){
 
 obj.ALM_two_level_2 <- function(Xcand, fit){
   newx <- matrix(Xcand, nrow=1)
-  -predRNAmf(fit, newx)$sig2 # to maximize the current variance.
+  -predRNAmf_two_level(fit, newx)$sig2 # to maximize the current variance.
 }
 
 
-#' ALM_two_level_optm
-#'
 #' find the next point by ALM criterion with two fidelity levels and update the model
+#'
+#'
 #'
 #' @param fit an object of class RNAmf.
 #' @param cost a vector of the costs for each level of fidelity.
@@ -73,8 +69,8 @@ obj.ALM_two_level_2 <- function(Xcand, fit){
 
 ALM_two_level <- function(fit, cost, funcs, n.start, parallel=FALSE, ncore=1){
 
-  if (length(cost)!=2) stop("The length of cost should be 2")
-  if (cost[1] >= cost[2]) stop("If the cost for high-fidelity is cheaper, just acquire the high-fidelity")
+  if(length(cost)!=2) stop("The length of cost should be 2")
+  if(cost[1] >= cost[2]) stop("If the cost for high-fidelity is cheaper, just acquire the high-fidelity")
   if(missing(n.start)) n.start <- 10 * dim(fit$fit1$X)[2]
   if(parallel) registerDoParallel(ncore)
 
@@ -150,8 +146,8 @@ ALM_two_level <- function(fit, cost, funcs, n.start, parallel=FALSE, ncore=1){
   newx <- matrix(chosen$Xnext, nrow=1)
   level <- chosen$level
 
-  X1 <- t(t(fit1$X)*attr(fit1$X,"scaled:scale")+attr(fit1$X,"scaled:center"))
-  X2 <- matrix(t(t(fit2$X)*attr(fit2$X,"scaled:scale")+attr(fit2$X,"scaled:center"))[,-ncol(fit2$X)], ncol=ncol(fit2$X)-1)
+  X1 <- scale.inputs(fit1$X, x.center1, x.scale1, back=TRUE)
+  X2 <- matrix(scale.inputs(fit2$X, x.center2, x.scale2, back=TRUE)[,-ncol(fit2$X)], ncol=ncol(fit2$X)-1)
 
   if(constant){
     y1 <- fit1$y
@@ -181,7 +177,7 @@ ALM_two_level <- function(fit, cost, funcs, n.start, parallel=FALSE, ncore=1){
     y2 <- c(y2, y2.select)
   }
 
-  fit <- RNAmf(X1, y1, X2, y2, kernel=kernel, constant=constant)
+  fit <- RNAmf_two_level(X1, y1, X2, y2, kernel=kernel, constant=constant)
 
   if(parallel)  stopImplicitCluster()
 
