@@ -8,7 +8,6 @@ It includes computing integration of one step ahead variance for proposed active
 Squared exponential kernel and Matern kernel-1.5, 2.5 are available for covariance structure. 
 
 Details are
-> Title
 > <arXiv:2309.11772>
 
 Maintainer: Junoh Heo <heojunoh@msu.edu>
