@@ -9,7 +9,7 @@ Squared exponential kernel and Matern kernel-1.5, 2.5 are available for covarian
 
 Details are
 > Title
-> <https://arxiv or doi>
+> <arXiv:2309.11772>
 
 Maintainer: Junoh Heo <heojunoh@msu.edu>
 
