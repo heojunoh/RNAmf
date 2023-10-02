@@ -17,8 +17,6 @@ A list predictive posterior mean and variance:
   \item \code{mu}: vector of predictive posterior mean.
   \item \code{sig2}: vector of predictive posterior variance.
 }
-
-#' @importFrom plgp distance
 }
 \description{
 The function computes the posterior mean and variance of RNA models with three fidelity levels
@@ -113,5 +111,5 @@ sqrt(mean((predy-apply(x,1,output.branin))^2))
 
 }
 \seealso{
-\code{\link{RNAmf_three_level}} for prediction.
+\code{\link{RNAmf_three_level}} for the model.
 }

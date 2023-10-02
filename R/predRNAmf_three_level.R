@@ -3,7 +3,7 @@
 #' @description The function computes the posterior mean and variance of RNA models with three fidelity levels
 #' by fitted model using \code{\link{RNAmf_three_level}}.
 #'
-#' @seealso \code{\link{RNAmf_three_level}} for prediction.
+#' @seealso \code{\link{RNAmf_three_level}} for the model.
 #'
 #' @details From the model fitted by \code{\link{RNAmf_three_level}},
 #' the posterior mean and variance are calculated based on the closed form expression derived by a recursive fashion.
@@ -20,7 +20,7 @@
 #'   \item \code{sig2}: vector of predictive posterior variance.
 #' }
 #'
-#' #' @importFrom plgp distance
+#' @importFrom plgp distance
 #' @export
 #' @examples
 #' library(MuFiCokriging)
