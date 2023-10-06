@@ -4,7 +4,7 @@ This is the R package `RNAmf` implementing the recursive non-additive emulation 
 by incorporating the outputs from previous layer to the input,
 which enables a comprehensive analysis of complex computer codes, 
 capturing functional correlations between different fidelity levels and enhancing the modeling and prediction capabilities. 
-It includes computing integration of one step ahead variance for proposed active learning.
+It includes three proposed active learning strategies.
 Squared exponential kernel and Matern kernel-1.5, 2.5 are available for covariance structure. 
 
 Details are
