@@ -31,9 +31,8 @@
 #' \dontrun{
 #' library(lhs)
 #' ### synthetic function ###
-#' f1 <- function(x)
-#' {
-#'   sin(8*pi*x)
+#' f1 <- function(x) {
+#'   sin(8 * pi * x)
 #' }
 #'
 #' ### training data ###
@@ -44,19 +43,17 @@
 #'
 #' GP(X1, y1)
 #' }
+GP <- function(X, y, g = sqrt(.Machine$double.eps),
+               lower = 0.001, upper = 1000,
+               Xscale = TRUE, Yscale = TRUE, constant = FALSE) {
+  if (constant) {
+    if (is.null(dim(X))) X <- matrix(X, ncol = 1)
 
-GP <- function(X, y, g=sqrt(.Machine$double.eps),
-               lower=0.001, upper=1000,
-               Xscale=TRUE, Yscale=TRUE, constant=FALSE){
-  if(constant){
-
-    if(is.null(dim(X))) X <- matrix(X, ncol = 1)
-
-    parbound <- function(XX){
+    parbound <- function(XX) {
       XX <- matrix(XX, ncol = 1)
 
-      lower = - quantile(distance(XX)[lower.tri(distance(XX))], 0.05)/log(0.01) * (apply(XX, 2, range)[2,] - apply(XX, 2, range)[1,])^2
-      upper = - quantile(distance(XX)[lower.tri(distance(XX))], 0.95)/log(0.5) * (apply(XX, 2, range)[2,] - apply(XX, 2, range)[1,])^2
+      lower <- -quantile(distance(XX)[lower.tri(distance(XX))], 0.05) / log(0.01) * (apply(XX, 2, range)[2, ] - apply(XX, 2, range)[1, ])^2
+      upper <- -quantile(distance(XX)[lower.tri(distance(XX))], 0.95) / log(0.5) * (apply(XX, 2, range)[2, ] - apply(XX, 2, range)[1, ])^2
 
       return(c(lower, upper))
     }
@@ -67,10 +64,10 @@ GP <- function(X, y, g=sqrt(.Machine$double.eps),
     # upper <- max(sort(distance(X))[sort(distance(X))!=0])
 
     # hetGP way * 10^(d*2/3)
-    XX <- (X - matrix(apply(X, 2, range)[1,], nrow = nrow(X), ncol = ncol(X), byrow = TRUE)) %*% diag(1/(apply(X, 2, range)[2,] - apply(X, 2, range)[1,]), ncol(X))
-    lower <- max(10^(ncol(XX)*2/3)*apply(XX, 2, parbound)[1,], 0.2)
-    upper <- 10^(ncol(XX)*2/3)*apply(XX, 2, parbound)[2,]
-    init <- sqrt(lower*upper)
+    XX <- (X - matrix(apply(X, 2, range)[1, ], nrow = nrow(X), ncol = ncol(X), byrow = TRUE)) %*% diag(1 / (apply(X, 2, range)[2, ] - apply(X, 2, range)[1, ]), ncol(X))
+    lower <- max(10^(ncol(XX) * 2 / 3) * apply(XX, 2, parbound)[1, ], 0.2)
+    upper <- 10^(ncol(XX) * 2 / 3) * apply(XX, 2, parbound)[2, ]
+    init <- sqrt(lower * upper)
 
     # # hetGP way
     # XX <- (X - matrix(apply(X, 2, range)[1,], nrow = nrow(X), ncol = ncol(X), byrow = TRUE)) %*% diag(1/(apply(X, 2, range)[2,] - apply(X, 2, range)[1,]), ncol(X))
@@ -78,71 +75,69 @@ GP <- function(X, y, g=sqrt(.Machine$double.eps),
     # upper <- apply(XX, 2, parbound)[2,]
     # init <- sqrt(lower*upper)
 
-    if(Xscale){
+    if (Xscale) {
       X <- scale.inputs(X)
-    }else{
-      attr(X,"scaled:center") <- rep(0, ncol(X))
-      attr(X,"scaled:scale") <- rep(1, ncol(X))
+    } else {
+      attr(X, "scaled:center") <- rep(0, ncol(X))
+      attr(X, "scaled:scale") <- rep(1, ncol(X))
     }
 
     n <- length(y)
 
-    nlsep <- function(par, X, Y)
-    {
+    nlsep <- function(par, X, Y) {
       theta <- par # lengthscale
-      K <- covar.sep(X, d=theta, g=g)
+      K <- covar.sep(X, d = theta, g = g)
       Ki <- solve(K)
-      ldetK <- determinant(K, logarithm=TRUE)$modulus
+      ldetK <- determinant(K, logarithm = TRUE)$modulus
 
-      one.vec <- matrix(1,ncol=1,nrow=n)
-      mu.hat <- drop((t(one.vec)%*%Ki%*%Y)/(t(one.vec)%*%Ki%*%one.vec))
+      one.vec <- matrix(1, ncol = 1, nrow = n)
+      mu.hat <- drop((t(one.vec) %*% Ki %*% Y) / (t(one.vec) %*% Ki %*% one.vec))
 
-      tau2hat <- drop(t(Y-mu.hat)%*%Ki%*%(Y-mu.hat)/n)
-      ll <- - (n/2)*log(tau2hat) - (1/2)*ldetK
+      tau2hat <- drop(t(Y - mu.hat) %*% Ki %*% (Y - mu.hat) / n)
+      ll <- -(n / 2) * log(tau2hat) - (1 / 2) * ldetK
       return(drop(-ll))
     }
 
-    gradnlsep <- function(par, X, Y)
-    {
+    gradnlsep <- function(par, X, Y) {
       theta <- par
-      K <- covar.sep(X, d=theta, g=g)
+      K <- covar.sep(X, d = theta, g = g)
       Ki <- solve(K)
 
-      one.vec <- matrix(1,ncol=1,nrow=n)
-      mu.hat <- drop((t(one.vec)%*%Ki%*%Y)/(t(one.vec)%*%Ki%*%one.vec))
+      one.vec <- matrix(1, ncol = 1, nrow = n)
+      mu.hat <- drop((t(one.vec) %*% Ki %*% Y) / (t(one.vec) %*% Ki %*% one.vec))
 
-      KiY <- Ki %*% (Y-mu.hat)
+      KiY <- Ki %*% (Y - mu.hat)
       ## loop over theta components
       dlltheta <- rep(NA, length(theta))
-      for(k in 1:length(dlltheta)){
-        dotK <- K *distance(X[,k])/(theta[k]^2)
-        dlltheta[k] <- (n/2) *t(KiY) %*% dotK %*% KiY / (t(Y) %*% KiY) - (1/2)*sum(diag(Ki %*% dotK))
+      for (k in 1:length(dlltheta)) {
+        dotK <- K * distance(X[, k]) / (theta[k]^2)
+        dlltheta[k] <- (n / 2) * t(KiY) %*% dotK %*% KiY / (t(Y) %*% KiY) - (1 / 2) * sum(diag(Ki %*% dotK))
       }
 
       return(-c(dlltheta))
     }
 
     outg <- optim(init, nlsep, gradnlsep,
-                  method="L-BFGS-B", lower=lower, upper=upper, X=X, Y=y)
+      method = "L-BFGS-B", lower = lower, upper = upper, X = X, Y = y
+    )
 
-    K <- covar.sep(X, d=outg$par, g=g)
+    K <- covar.sep(X, d = outg$par, g = g)
     Ki <- solve(K)
-    one.vec <- matrix(1,ncol=1,nrow=n)
-    mu.hat <- drop((t(one.vec)%*%Ki%*%y)/(t(one.vec)%*%Ki%*%one.vec))
-    tau2hat <- drop(t(y-mu.hat) %*% Ki %*% (y-mu.hat) / nrow(X))
+    one.vec <- matrix(1, ncol = 1, nrow = n)
+    mu.hat <- drop((t(one.vec) %*% Ki %*% y) / (t(one.vec) %*% Ki %*% one.vec))
+    tau2hat <- drop(t(y - mu.hat) %*% Ki %*% (y - mu.hat) / nrow(X))
     theta <- outg$par
     names(theta) <- NULL
 
-    return(list(theta = theta, g=g, Ki=Ki, mu.hat=mu.hat, X = X, y = y, tau2hat=tau2hat, Xscale=Xscale, constant=constant))
-  }else{
+    return(list(theta = theta, g = g, Ki = Ki, mu.hat = mu.hat, X = X, y = y, tau2hat = tau2hat, Xscale = Xscale, constant = constant))
+  } else {
+    if (is.null(dim(X))) X <- matrix(X, ncol = 1)
 
-    if(is.null(dim(X))) X <- matrix(X, ncol = 1)
-
-    parbound <- function(XX){
+    parbound <- function(XX) {
       XX <- matrix(XX, ncol = 1)
 
-      lower = - quantile(distance(XX)[lower.tri(distance(XX))], 0.05)/log(0.01) * (apply(XX, 2, range)[2,] - apply(XX, 2, range)[1,])^2
-      upper = - quantile(distance(XX)[lower.tri(distance(XX))], 0.95)/log(0.5) * (apply(XX, 2, range)[2,] - apply(XX, 2, range)[1,])^2
+      lower <- -quantile(distance(XX)[lower.tri(distance(XX))], 0.05) / log(0.01) * (apply(XX, 2, range)[2, ] - apply(XX, 2, range)[1, ])^2
+      upper <- -quantile(distance(XX)[lower.tri(distance(XX))], 0.95) / log(0.5) * (apply(XX, 2, range)[2, ] - apply(XX, 2, range)[1, ])^2
 
       return(c(lower, upper))
     }
@@ -153,10 +148,10 @@ GP <- function(X, y, g=sqrt(.Machine$double.eps),
     # upper <- max(sort(distance(X))[sort(distance(X))!=0])
 
     # hetGP way * 10^(d*2/3)
-    XX <- (X - matrix(apply(X, 2, range)[1,], nrow = nrow(X), ncol = ncol(X), byrow = TRUE)) %*% diag(1/(apply(X, 2, range)[2,] - apply(X, 2, range)[1,]), ncol(X))
-    lower <- max(10^(ncol(XX)*2/3)*apply(XX, 2, parbound)[1,], 0.2)
-    upper <- 10^(ncol(XX)*2/3)*apply(XX, 2, parbound)[2,]
-    init <- sqrt(lower*upper)
+    XX <- (X - matrix(apply(X, 2, range)[1, ], nrow = nrow(X), ncol = ncol(X), byrow = TRUE)) %*% diag(1 / (apply(X, 2, range)[2, ] - apply(X, 2, range)[1, ]), ncol(X))
+    lower <- max(10^(ncol(XX) * 2 / 3) * apply(XX, 2, parbound)[1, ], 0.2)
+    upper <- 10^(ncol(XX) * 2 / 3) * apply(XX, 2, parbound)[2, ]
+    init <- sqrt(lower * upper)
 
     # # hetGP way
     # XX <- (X - matrix(apply(X, 2, range)[1,], nrow = nrow(X), ncol = ncol(X), byrow = TRUE)) %*% diag(1/(apply(X, 2, range)[2,] - apply(X, 2, range)[1,]), ncol(X))
@@ -164,36 +159,35 @@ GP <- function(X, y, g=sqrt(.Machine$double.eps),
     # upper <- - quantile(distance(XX)[lower.tri(distance(XX))], 0.95)/log(0.5) * (apply(XX, 2, range)[2,] - apply(XX, 2, range)[1,])^2
     # init <- sqrt(lower*upper)
 
-    if(Xscale){
+    if (Xscale) {
       X <- scale.inputs(X)
-    }else{
-      attr(X,"scaled:center") <- rep(0, ncol(X))
-      attr(X,"scaled:scale") <- rep(1, ncol(X))
+    } else {
+      attr(X, "scaled:center") <- rep(0, ncol(X))
+      attr(X, "scaled:scale") <- rep(1, ncol(X))
     }
 
     n <- length(y)
-    if(Yscale) y <- scale(y, center=TRUE, scale=FALSE) # If use mean, don't scale
+    if (Yscale) y <- scale(y, center = TRUE, scale = FALSE) # If use mean, don't scale
 
-    nlsep <- function(par, X, Y)
-    {
+    nlsep <- function(par, X, Y) {
       theta <- par # lengthscale
-      K <- covar.sep(X, d=theta, g=g)
+      K <- covar.sep(X, d = theta, g = g)
       Ki <- solve(K)
-      ldetK <- determinant(K, logarithm=TRUE)$modulus
-      ll <- - (n/2)*log(t(Y) %*% Ki %*% Y) - (1/2)*ldetK
+      ldetK <- determinant(K, logarithm = TRUE)$modulus
+      ll <- -(n / 2) * log(t(Y) %*% Ki %*% Y) - (1 / 2) * ldetK
       return(drop(-ll))
     }
 
-    outg <- optim(init, nlsep, method="L-BFGS-B", lower=lower, upper=upper, X=X, Y=y)
+    outg <- optim(init, nlsep, method = "L-BFGS-B", lower = lower, upper = upper, X = X, Y = y)
 
-    K <- covar.sep(X, d=outg$par, g=g)
+    K <- covar.sep(X, d = outg$par, g = g)
     Ki <- solve(K)
     tau2hat <- drop(t(y) %*% Ki %*% y / n)
     mu.hat <- 0
     theta <- outg$par
     names(theta) <- NULL
 
-    return(list(theta = theta, g=g, Ki=Ki, mu.hat=mu.hat, X = X, y = y, tau2hat=tau2hat, Xscale=Xscale, Yscale=Yscale, constant=constant))
+    return(list(theta = theta, g = g, Ki = Ki, mu.hat = mu.hat, X = X, y = y, tau2hat = tau2hat, Xscale = Xscale, Yscale = Yscale, constant = constant))
   }
 }
 
@@ -215,9 +209,8 @@ GP <- function(X, y, g=sqrt(.Machine$double.eps),
 #' \dontrun{
 #' library(lhs)
 #' ### synthetic function ###
-#' f1 <- function(x)
-#' {
-#'   sin(8*pi*x)
+#' f1 <- function(x) {
+#'   sin(8 * pi * x)
 #' }
 #'
 #' ### training data ###
@@ -229,14 +222,13 @@ GP <- function(X, y, g=sqrt(.Machine$double.eps),
 #' fit1 <- GP(X1, y1)
 #'
 #' ### test data ###
-#' x <- seq(0,1,0.01)
+#' x <- seq(0, 1, 0.01)
 #' pred.GP(fit1, x)
 #' }
-
-pred.GP <- function(fit, xnew){
+pred.GP <- function(fit, xnew) {
   constant <- fit$constant
 
-  if(constant){
+  if (constant) {
     xnew <- as.matrix(xnew)
 
     Xscale <- fit$Xscale
@@ -248,16 +240,16 @@ pred.GP <- function(fit, xnew){
     tau2hat <- fit$tau2hat
     mu.hat <- fit$mu.hat
 
-    if(Xscale) xnew <- scale.inputs(xnew, attr(X,"scaled:center"), attr(X,"scaled:scale"))
+    if (Xscale) xnew <- scale.inputs(xnew, attr(X, "scaled:center"), attr(X, "scaled:scale"))
 
-    KXX <- covar.sep(xnew, d=theta, g=g)
-    KX <- covar.sep(xnew, X, d=theta, g=0)
+    KXX <- covar.sep(xnew, d = theta, g = g)
+    KX <- covar.sep(xnew, X, d = theta, g = 0)
 
     mup2 <- mu.hat + KX %*% Ki %*% (y - mu.hat)
-    Sigmap2 <- pmax(0, diag(tau2hat*(KXX - KX %*% Ki %*% t(KX))))
+    Sigmap2 <- pmax(0, diag(tau2hat * (KXX - KX %*% Ki %*% t(KX))))
 
-    return(list(mu=mup2, sig2=Sigmap2))
-  }else{
+    return(list(mu = mup2, sig2 = Sigmap2))
+  } else {
     xnew <- as.matrix(xnew)
 
     Xscale <- fit$Xscale
@@ -269,14 +261,14 @@ pred.GP <- function(fit, xnew){
     y <- fit$y
     tau2hat <- fit$tau2hat
 
-    if(Xscale) xnew <- scale.inputs(xnew, attr(X,"scaled:center"), attr(X,"scaled:scale"))
+    if (Xscale) xnew <- scale.inputs(xnew, attr(X, "scaled:center"), attr(X, "scaled:scale"))
 
-    KXX <- covar.sep(xnew, d=theta, g=g)
-    KX <- covar.sep(xnew, X, d=theta, g=0)
+    KXX <- covar.sep(xnew, d = theta, g = g)
+    KX <- covar.sep(xnew, X, d = theta, g = 0)
 
-    if(Yscale) mup2 <- KX %*% Ki %*% (y + attr(y, "scaled:center")) else mup2 <- KX %*% Ki %*% y
-    Sigmap2 <- pmax(0, diag(tau2hat*(KXX - KX %*% Ki %*% t(KX))))
+    if (Yscale) mup2 <- KX %*% Ki %*% (y + attr(y, "scaled:center")) else mup2 <- KX %*% Ki %*% y
+    Sigmap2 <- pmax(0, diag(tau2hat * (KXX - KX %*% Ki %*% t(KX))))
 
-    return(list(mu=mup2, sig2=Sigmap2))
+    return(list(mu = mup2, sig2 = Sigmap2))
   }
 }

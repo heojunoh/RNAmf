@@ -4,7 +4,7 @@
 \alias{RNAmf_two_level}
 \title{Fitting the Recursive non-additive model with two fidelity levels.}
 \usage{
-RNAmf_two_level(X1, y1, X2, y2, kernel = "sqex", constant = FALSE)
+RNAmf_two_level(X1, y1, X2, y2, kernel = "sqex", constant = TRUE, ...)
 }
 \arguments{
 \item{X1}{vector or matrix of input locations for the low fidelity level.}
@@ -15,78 +15,51 @@ RNAmf_two_level(X1, y1, X2, y2, kernel = "sqex", constant = FALSE)
 
 \item{y2}{vector of response values for the high fidelity level.}
 
-\item{kernel}{chracter specifying kernel type to be used, to be chosen between "sqex"(squared exponential), "matern1.5", or "matern2.5". Default is "sqex".}
+\item{kernel}{character specifying kernel type to be used, to be chosen between \code{"sqex"}(squared exponential), \code{"matern1.5"}, or \code{"matern2.5"}. Default is \code{"sqex"}.}
 
-\item{constant}{logical indicating for constant mean (constant=TRUE) or zero mean (constant=FALSE). Default is FALSE.}
+\item{constant}{logical indicating for constant mean of GP (\code{constant=TRUE}) or zero mean (\code{constant=FALSE}). Default is \code{TRUE}.}
+
+\item{...}{for compatibility with \code{optim}.}
 }
 \value{
-A list containing fitted models f1 and f2, constant, and kernel structure:
 \itemize{
-  \item \code{fit1}: list of fitted model for (X1, y1).
-  \item \code{fit2}: list of fitted model for ((X2, f1(X2)), y2).
-  \item \code{constant}: copy of constant.
-  \item \code{kernel}: copy of kernel.
+  \item \code{fit1}: list of fitted model for \eqn{(X_1, y_1)}.
+  \item \code{fit2}: list of fitted model for \eqn{((X_2, f_1(X_2)), y_2)}.
+  \item \code{constant}: copy of \code{constant}.
+  \item \code{kernel}: copy of \code{kernel}.
+  \item \code{level}: a level of the fidelity. It returns 2.
+  \item \code{time}: a scalar of the time for the computation.
 }
 }
 \description{
-The function fits RNA models with designs of two fidelity levels,
-including estimation of hyperparameters. The estimation methods are based on MLE.
-Possible kernel choices are squared exponential, Matern 1.5 and Matern 2.5.
+The function fits RNA models with designs of two fidelity levels.
+The estimation method is based on MLE.
+Possible kernel choices are squared exponential, Matern kernel with smoothness parameter 1.5 and 2.5.
 The function returns fitted model at level 1 and 2, whether constant mean or not, and kernel choice.
 }
 \details{
 Consider the model
 \eqn{\begin{cases}
-& f_1(\mathbf{x}) = W_1(\mathbf{x}),\\
-& f_2(\mathbf{x}) = W_2(\mathbf{x}, f_1(\mathbf{x})),
+& f_1(\bm{x}) = W_1(\bm{x}),\\
+& f_2(\bm{x}) = W_2(\bm{x}, f_1(\bm{x})),
 \end{cases}}
-where \eqn{W(\mathbf{x})} is GP model.
-Hyperparameters \eqn{(\alpha, \tau^2, \mathbf{\theta})} are estimated by
+where \eqn{f_l} is the simulation code at fidelity level \eqn{l}, and
+\eqn{W_l(\bm{x}) \sim GP(\alpha_l, \tau_l^2 K_l(\bm{x}, \bm{x}'))} is GP model.
+Hyperparameters \eqn{(\alpha_l, \tau_l^2, \bm{\theta_l})} are estimated by
 maximizing the log-likelihood via an optimization algorithm "L-BFGS-B".
+For \code{constant=FALSE}, \eqn{\alpha_l=0}.
+
+Covariance kernel is defined as:
+\eqn{K_l(\bm{x}, \bm{x}')=\prod^d_{j=1}\phi(x_j,x'_j;\theta_{lj})} with
+\eqn{\phi(x, x';\theta) = \exp \left( -\frac{ \left( x - x' \right)^2}{\theta}  \right)}
+for squared exponential kernel; \code{kernel="sqex"},
+\eqn{\phi(x,x';\theta) =\left( 1+\frac{\sqrt{3}|x- x'|}{\theta} \right) \exp \left( -\frac{\sqrt{3}|x- x'|}{\theta} \right)}
+for Matern kernel with the smoothness parameter of 1.5; \code{kernel="matern1.5"} and
+\eqn{\phi(x, x';\theta) =  \left( 1+\frac{\sqrt{5}|x-x'|}{\theta} +\frac{5(x-x')^2}{3\theta^2} \right) \exp \left( -\frac{\sqrt{5}|x-x'|}{\theta} \right)}
+for Matern kernel with the smoothness parameter of 2.5; \code{kernel="matern2.5"}.
+
 For details, see Heo and Sung (2023+, <arXiv:2309.11772>).
 }
-\examples{
-library(MuFiCokriging)
-library(lhs)
-
-### Perdikaris function ###
-f1 <- function(x)
-{
-  sin(8*pi*x)
-}
-
-f2 <- function(x)
-{
-  (x-sqrt(2))*(sin(8*pi*x))^2
-}
-
-### training data ###
-n1 <- 13; n2 <- 8
-
-X1 <- maximinLHS(n1, 1)
-X2 <- maximinLHS(n2, 1)
-
-NestDesign <- NestedDesignBuild(design = list(X1,X2))
-
-X1 <- NestDesign$PX
-X2 <- ExtractNestDesign(NestDesign,2)
-
-y1 <- f1(X1)
-y2 <- f2(X2)
-
-### test data ###
-x <- seq(0,1,length.out=1000)
-
-### fitting ###
-fit.RNAmf <- RNAmf_two_level(X1, y1, X2, y2, kernel="sqex", constant=TRUE)
-pred.RNAmf <- predRNAmf_two_level(fit.RNAmf, x)
-predy <- pred.RNAmf$mu
-predsig2 <- pred.RNAmf$sig2
-
-### RMSE ###
-sqrt(mean((predy-f2(x))^2))
-
-}
 \seealso{
-\code{\link{predRNAmf_two_level}} for prediction.
+\code{\link{predict.RNAmf}} for prediction.
 }

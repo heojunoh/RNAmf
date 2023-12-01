@@ -9,16 +9,15 @@
 #' @noRd
 #'
 
-scale.inputs <- function(X, center=NULL, scale=NULL, back=FALSE){
-
-  if(back){
-    if(is.null(center) | is.null(scale)) stop("center and scale are required to scale back")
+scale.inputs <- function(X, center = NULL, scale = NULL, back = FALSE) {
+  if (back) {
+    if (is.null(center) | is.null(scale)) stop("center and scale are required to scale back")
     X <- t(t(X) * scale + center)
-  }else{
-    if(is.null(center)) center <- attr(scale(X),"scaled:center")
-    if(is.null(scale)) scale <- attr(scale(X),"scaled:scale")
+  } else {
+    if (is.null(center)) center <- attr(scale(X), "scaled:center")
+    if (is.null(scale)) scale <- attr(scale(X), "scaled:scale")
 
-    X <- t((t(X)-center)/scale)
+    X <- t((t(X) - center) / scale)
     attr(X, "scaled:center") <- center
     attr(X, "scaled:scale") <- scale
   }
@@ -35,15 +34,13 @@ scale.inputs <- function(X, center=NULL, scale=NULL, back=FALSE){
 #' @noRd
 #'
 
-checknested <- function(XX1, XX2){
+checknested <- function(XX1, XX2) {
   checknest <- c()
-  for(i in 1:nrow(XX2)){
-    checknest <- c(checknest, suppressWarnings(any(apply(XX1, 1, function(xx){all.equal(XX2[i,], xx, tolerance=sqrt(.Machine$double.eps))}))))
+  for (i in 1:nrow(XX2)) {
+    checknest <- c(checknest, suppressWarnings(any(apply(XX1, 1, function(xx) {
+      all.equal(XX2[i, ], xx, tolerance = sqrt(.Machine$double.eps))
+    }))))
   }
   checknest[is.na(checknest)] <- FALSE
   all(checknest)
 }
-
-
-
-
