@@ -1,6 +1,6 @@
 # RNAmf
 
-**Note:** The latest version of RNAmf can be downloaded on [CRAN](cran.r-project.org/web/packages/RNAmf). 
+**Note:** The latest version of RNAmf can be downloaded on [CRAN](https://doi.org/10.32614/CRAN.package.RNAmf). 
 
 The `RNAmf` package for <tt>R</tt> provides an emulation of 
 a recursive non-additive (RNA) surrogate model for multi-fidelity computer experiments,
